@@ -1,0 +1,34 @@
+@startuml
+
+title "Distribute MTA rewards on mainnet"
+ 
+actor "Funds Manager" as fm
+participant "RewardsDistributor" as rd <<mStable>>
+participant "Boosted Vault\neg vMTA, v-imUSD,\nv-fPmUSD/GUSD" as vault <<mStable>>
+' participant "imMUSD Vault\n(v-imUSD)" as vmUSD <<mStable>>
+' participant "imBTC Vault\n(v-imBTC)" as vmBTC <<mStable>>
+' participant "GUSD FP Vault\n(v-fPmUSD/GUSD)" as vGUSD <<mStable>>
+' participant "BUSD FP Vault\n(v-fPmUSD/BUSD)" as vBUSD <<mStable>>
+' participant "TBTC FP Vault\n(v-fPmBTC/TBTC)" as vTBTC <<mStable>>
+' participant "HBTC FP Vault\n(v-fPmBTC/HBTC)" as vHBTC <<mStable>>
+participant "Meta Token" as mta <<mStable>>
+
+fm -> rd : distributeRewards\n(vaults, amounts)
+activate rd
+loop vaults
+rd -> vault : getRewardToken ()
+activate vault
+return MTA token
+rd -> mta : transferFrom (fund manager, vaults[i], amounts[i])
+note left: transfers MTA to\nVoting Meta contract
+activate mta
+return
+rd -> vault : notifyRewardAmount\n(amounts[i])
+activate vault
+note left: Updates rewardRate based\non the rewards in period.
+vault -> vault : updateReward (address(0))
+return
+end
+return
+
+@enduml

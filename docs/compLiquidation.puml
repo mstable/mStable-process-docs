@@ -1,0 +1,78 @@
+@startuml
+
+title "Liquidation of Compound (COMP) Tokens"
+ 
+actor Ops as ops
+participant "Liquidator" as liq <<mStable>>
+participant "Savings Manager" as sm <<mStable>>
+participant "mAsset" as mAsset <<mStable>>
+participant "Comptroller" as ctroll <<Compound>>
+participant "Compound" as comp <<Compound>>
+participant "USDC" as usdc <<Circle>>
+participant "Quoter" as quote <<Uniswap V3>>
+participant "Swap Router" as uni <<Uniswap V3>>
+
+ops -> ctroll : claimComp (integration, cTokens)
+activate ctroll
+note left : claim COMP\nfor cTokens.\neg cUSDC
+ctroll -> comp : tansfer (\nintegration,\namount)
+activate comp
+note left : transfer accrued\nCOMP to integration
+return
+return
+
+ops -> liq : triggerLiquidation (integration)
+activate liq
+liq -> comp : balanceOf (integration)
+activate comp
+return integrationBalance
+liq -> comp : transferFrom (integration, liquidator, integrationBalance)
+note left : transfers all gov tokens\nfrom integration to liquidator.\n eg COMP
+activate comp
+return
+liq -> quote : quoteExactOutput (uniswapPathReversed, maxBuyAmount)
+activate quote
+return maxSellAmount
+
+liq -> comp : balanceOf (liquidator)
+activate comp
+return liquidatorBalance
+
+
+liq -> uni : exactInput (uniswapPath, liquidator, sellAmount, minOut);
+activate uni
+note left : swap gov tokens for bAsset.\neg COMP for USDC
+return 
+
+liq -> usdc : balanceOf (liquidator)
+activate usdc
+note left : get the liquidator's\nbAsset balance. eg USDC
+return bAssetBalance
+
+liq -> mAsset : mint (usdc, liquidator USDC balance)
+activate mAsset
+note left : mints mAssets\nfrom USDC\nto liquidator.
+mAsset -> usdc : transferFrom (liquidator, integration, liquidator USDC balance)
+activate usdc
+note left : mAsset transfers USDC\nfrom liquidator to integration.
+return
+return
+
+liq -> sm : depositLiquidation (\nmAsset,\nmAssetsPurchased)
+activate sm
+note left : Deposit purchased mAssets\nto Savings Manager
+sm -> mAsset : collectInterest()
+activate mAsset
+note left : collects swap\nand redeem fees
+return
+sm -> mAsset : transferFrom (liquidator,\nsavings manager,\nmAssetsPurchased)
+activate mAsset
+note left : transfer mAssets\nfrom liquidator\nto savings manager
+return
+sm -> sm : stream (mAsset,\nmAssetsPurchased + leftover,\nduration)
+note left : Stream mAssets to\nSavinngs Contract\nover 7 days.\neg imUSD
+return
+
+return
+
+@enduml

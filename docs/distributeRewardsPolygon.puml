@@ -1,0 +1,110 @@
+@startuml
+
+title "Distribution of MTA and WMATIC rewards on Polygon"
+
+actor "Funds Manager" as fm
+actor "Staker" as staker
+participant "RewardsDistributor" as rd <<mStable>>
+participant "imUSD Vault\n(v-imUSD)" as vault <<mStable>>
+participant "mUSD Savings\n(imUSD)" as sr <<mStable>>
+participant "Bridged Meta\n(MTA PoS)" as mta <<mStable>>
+participant "Wrapped MATIC\n(WMATIC)" as plat <<Polygon>>
+participant "Platform Vendor" as ven <<mStable>>
+
+== Distribute Reward (MTA) and Platform (WMATIC) Tokens ==
+
+fm -> mta : approve (imUSD Vault, MTA rewards amount)
+activate mta
+note left: Fund Manager approves\nvault to transfer MTA
+return
+...
+fm -> plat : approve (imUSD Vault, WMATIC rewards amount)
+activate plat
+note left: Fund Manager approves\nvault to transfer WMATIC
+return
+...
+fm -> rd : distributeRewards\n([v-imUSD],\n[MTA amount],\n[WMATIC amount])
+activate rd
+loop vaults
+rd -> vault : getRewardToken ()
+activate vault
+return MTA token
+rd -> vault : getPlatformToken ()
+activate vault
+return Platform token
+
+rd -> mta : transferFrom (fund manager, v-imUSD, MTA amount)
+note left: transfer MTA to\nimUSD Vault (v-imUSD)
+activate mta
+return
+
+rd -> plat : transferFrom\n(fund manager, v-imUSD, WMATIC amount)
+note left: transfer WMATIC to\nimUSD Vault (v-imUSD)
+activate plat
+return
+
+rd -> vault : notifyRewardAmount\n(MTA amount)
+activate vault
+note left: Updates rewardRate based\non the rewards in period.
+vault -> vault : updateReward (address(0))
+note left: update reward rates
+
+vault -> plat : balanceOf (vault)
+activate plat
+note left: get WMATIC balance of vault
+return Platform token balance of vault
+vault -> plat : transferFrom (vault, Platform token balance of vault)
+note left : transfer WMATIC to\nplatform vendor contract
+activate plat
+return
+
+return
+end
+return
+
+== Stake ==
+
+staker -> sr : approve (imUSD Vault, imUSD amount)
+activate sr
+note left: Staker approves vault\nto transfer imUSD
+return
+...
+staker -> vault : stake (imUSD amount)
+activate vault
+vault -> vault :  updateReward (staker)
+note left: update staker's rewards
+vault -> sr : transferFrom\n(staker, vault, imUSD amount)
+activate sr
+note left: transfer imUSD\nfrom staker to vault
+return
+return
+
+== Claim ==
+
+staker -> vault : claimReward ()
+activate vault
+vault -> vault :  updateReward (staker)
+note left: update staker's rewards
+vault -> mta : transfer (staker, rewards)
+activate mta
+note left: transfer MTA rewards\nfrom vault to staker
+return
+vault -> ven : transferFrom (platform vendor, staker, rewards)
+activate ven
+note left: transfer WMATIC rewards\nfrom vendor contract to staker
+return
+return
+
+== Withdraw ==
+
+staker -> vault : withdraw (imUSD amount)
+activate vault
+vault -> vault :  updateReward (staker)
+note left: update staker's rewards
+vault -> sr : transfer\n(staker, imUSD amount)
+activate sr
+note left: transfer imUSD\nfrom vault to staker
+return
+return
+
+@enduml

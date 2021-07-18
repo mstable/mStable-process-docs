@@ -1,0 +1,95 @@
+@startuml
+
+title "Liquidation of WMATIC on Polygon"
+ 
+actor Ops as ops
+participant "Integration" as int <<mStable>>
+participant "Liquidator" as liq <<mStable>>
+participant "Savings Manager" as sm <<mStable>>
+participant "mAsset" as mAsset <<mStable>>
+participant "Incentives\nController" as ic <<Aave>>
+' participant "Aave" as aave <<Aave>>
+participant "WMATIC" as matic <<Polygon>>
+participant "USDC (PoS)" as usdc <<Circle>>
+participant "Router" as qs <<QuickSwap>>
+
+ops -> int : claimRewards()
+activate int
+int -> ic : claimRewards (pTokens, max amount, liquidator)
+note left : liquidator claims\nreward for all pTokens
+activate ic
+ic -> matic : transfer (integration, rewards)
+note left : transfer all accrued rewards\nto liquidator. eg WMATIC
+activate matic
+return
+return
+return
+
+ops -> liq : triggerLiquidation (integration)
+activate liq
+liq -> matic : balanceOf (integration)
+activate matic
+note left : get integration's balance of rewards.\neg WMATIC
+return integration rewards balance
+liq -> matic : transferFrom (integration, liquidator, integration rewards balance)
+note left : transfers all rewards\nfrom integration to liquidator.\n eg WMATIC
+activate matic
+return
+
+liq -> matic : balanceOf (liquidator)
+activate matic
+note left : get liquidator's rewards balance.
+return liquidator rewards balance
+
+liq -> matic : approve (QuickSwap, liquidator rewards balance)
+activate matic
+note left : liquidator approves QuickSwap\nto transfer rewards
+return
+
+liq -> qs : swapExactTokensForTokens (liquidator rewards balance, minOut, uniswapPath, liquidator);
+activate qs
+note left : swap rewards for\nbAsset using QuickSwap.\neg WMATIC for USDC (PoS)
+return
+
+liq -> usdc : balanceOf (liquidator)
+activate usdc
+note left: get liquidator's bAsset balance.\neg USDC (PoS)
+return liquidator bAsset balance
+
+liq -> usdc : approve (mAsset, liquidator bAsset balance)
+activate usdc
+note left : liquidator approves mAsset\nto transfer bAssets.\neg mUSD to transfer USDC (PoS)
+return
+
+liq -> mAsset : mint (bAsset, liquidator bAsset balance)
+activate mAsset
+note left : mints mAssets\nfrom bAssets\nto liquidator.\neg mUSD from USDC (PoS)
+mAsset -> usdc : transferFrom (liquidator, integration, liquidator bAsset balance)
+activate usdc
+note left : mAsset transfers bAsset\nfrom liquidator to integration.\neg USDC (PoS)
+return
+return
+
+
+liq -> mAsset : approve (saving manager, mAssetsPurchased)
+activate mAsset
+note left : liquidator approves savings manager\nto transfer mAsset. eg mUSD
+return
+liq -> sm : depositLiquidation (\nmAsset,\nmAssetsPurchased)
+activate sm
+note left : Deposit purchased mAssets\nto Savings Manager
+sm -> mAsset : collectInterest()
+activate mAsset
+note left : collects swap/redeem\nfees from mAsset
+return
+sm -> mAsset : transferFrom (liquidator,\nsavings manager,\nmAssetsPurchased)
+activate mAsset
+note left : transfer mAssets\nfrom liquidator\nto savings manager
+return
+sm -> sm : stream (mAsset,\nmAssetsPurchased + leftover,\nduration)
+note left : Stream mAssets to\nSavinngs Contract\nover 1 day.\neg imUSD
+return
+
+return
+
+@enduml

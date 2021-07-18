@@ -1,0 +1,98 @@
+@startuml
+
+title "Liquidation of AAVE reward tokens on mainnet for the GUSD feeder pool"
+ 
+actor Ops as ops
+participant "Aave\nLiquidator" as liq <<mStable>>
+participant "Aave GUSD\nIntegration" as int <<mStable>>
+participant "Incentives\nController" as ic <<Aave>>
+participant "Aave" as aave <<Aave>>
+participant "stkAave" as stkAave <<Aave>>
+participant "GUSD" as gusd <<Gemini>>
+participant "Router V3" as uni <<Uniswap>>
+
+== Setup ==
+
+ops -> liq : upgrade ()
+activate liq
+liq -> aave : approve (Uniswap V3, infinite amount)
+activate aave
+note left : liquidator approves Uniswap V3\nto transfer infinite Aave.
+return
+return
+
+== Liquidate ==
+
+ops -> liq : claimStakedAave ()
+activate liq
+liq -> stkAave : stakersCooldowns(liquidator)
+note left : Check if unstake period has\nexpired for this liquidator.
+activate stkAave
+return cooldown start
+loop Aave integrations
+liq -> int : claimRewards()
+activate int
+int -> ic : claimRewards (aTokens)
+note left : liquidator claims reward\nfor all its aTokens
+activate ic
+ic -> stkAave : transfer (integration, rewards)
+note left : transfer stkAave rewards to liquidator.
+activate stkAave
+return
+return
+return
+liq -> stkAave : balanceOf (integration)
+activate stkAave
+note left : get integration's stkAave balance.
+return integration stkAave balance
+liq -> stkAave : transferFrom (integration, liquidator, integration stkAave balance)
+note left : transfers all stkAave\nfrom integration to liquidator.
+activate stkAave
+return
+end
+liq -> stkAave : cooldown()
+note left : Activate 10 day cool down of stkAave.
+activate stkAave
+return
+return
+
+...10 days...
+
+ops -> liq : triggerLiquidationAave ()
+activate liq
+liq -> stkAave : redeem(infinite amount)
+activate stkAave
+note left : Redeems stkAave for Aave.\nResets cool down start to 0.
+stkAave -> stkAave : burnFrom (\nliquidator,\nstkAave amount)
+stkAave -> aave : transfer (\nliquidator,\nstkAave amount)
+activate aave
+return
+return
+
+liq -> aave : balanceOf (liquidator)
+activate aave
+note left : get liquidator's Aave balance.
+return liquidator Aave balance
+
+loop Aave integrations
+liq -> liq : accountForAave()
+note left : account for the redeemed Aave\nfrom each integration contract.
+
+liq -> uni : exactInput (Aave, GUSD, liquidator, liquidator Aave balance)
+activate uni
+note left : swap Aave for GUSD\nusing Uniswap V3.
+return
+
+liq -> gusd : balanceOf (liquidator)
+activate gusd
+note left: get liquidator's GUSD balance.
+return liquidator GUSD balance
+
+liq -> gusd : transfer(integration, liquidator GUSD balance) 
+activate gusd
+note left: transfer GUSD to integration\nto increase savings vault price
+return
+end
+return
+
+@enduml

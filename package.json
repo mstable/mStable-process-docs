@@ -1,0 +1,32 @@
+{
+  "name": "mstable-process-docs",
+  "version": "0.0.1",
+  "description": "mStable process documentation",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mstable/mStable-process-docs.git"
+  },
+  "keywords": [
+    "mStable",
+    "UML",
+    "Ethereum"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mstable/mStable-process-docs/issues"
+  },
+  "homepage": "https://github.com/mstable/mStable-process-docs#readme",
+  "dependencies": {
+    "markdown-pdf": "^10.0.0",
+    "markdown-toc": "^1.2.0",
+    "node-plantuml": "^0.9.0"
+  }
+}

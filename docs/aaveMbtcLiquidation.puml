@@ -1,0 +1,133 @@
+@startuml
+
+title "Liquidation of Aave reward tokens (stkAAVE) for mBTC's WBTC on mainnet"
+ 
+actor Ops as ops
+participant "Aave\nLiquidator" as liq <<mStable>>
+participant "Aave mBTC\nIntegration" as int <<mStable>>
+participant "Savings\nManager" as sm <<mStable>>
+participant "mBTC" as mAsset <<mStable>>
+participant "Incentives\nController" as ic <<Aave>>
+participant "Aave" as aave <<Aave>>
+participant "stkAave" as stkAave <<Aave>>
+participant "WBTC" as usdc <<WBTC>>
+participant "Router V3" as uni <<Uniswap>>
+
+== Setup ==
+
+ops -> liq : upgrade ()
+activate liq
+liq -> aave : approve (Uniswap V3, infinite amount)activate aave
+activate aave
+note left : liquidator approves Uniswap V3\nto transfer infinite Aave.
+return
+return
+
+ops -> liq : createLiquidation (liquidation)
+activate liq
+liq -> usdc : approve (mBTC, infinite amount)
+activate usdc
+note left : liquidator approves mBTC\nto transfer infinite WBTC.
+return
+liq -> mAsset : approve (saving manager, infinite amount)
+activate mAsset
+note left : liquidator approves savings manager\nto transfer infinite mBTC.
+return
+return
+
+== Liquidate ==
+
+ops -> liq : claimStakedAave ()
+activate liq
+liq -> stkAave : stakersCooldowns (liquidator)
+note left : Check if unstake period has\nexpired for this liquidator.
+activate stkAave
+return cooldown start
+loop integrations
+liq -> int : claimRewards()
+activate int
+int -> ic : claimRewards (aWBTC)
+note left : integration contract claims reward\nfor all its aTokens
+activate ic
+ic -> stkAave : transfer (integration, rewards)
+note left : transfer stkAave rewards\nto integration contract.
+activate stkAave
+return
+return
+return
+liq -> stkAave : balanceOf (integration)
+activate stkAave
+note left : get integration's stkAave balance.
+return integration stkAave balance
+liq -> stkAave : transferFrom (integration, liquidator, integration stkAave balance)
+note left : transfers all stkAave\nfrom integration to liquidator.
+activate stkAave
+return
+end
+liq -> stkAave : cooldown()
+note left : Activate 10 day cooldown of stkAave.
+activate stkAave
+return
+return
+
+...10 days...
+
+ops -> liq : triggerLiquidationAave ()
+activate liq
+liq -> stkAave : redeem(infinite amount)
+activate stkAave
+note left : Redeems stkAave for Aave.\nResets cooldown start time.
+stkAave -> stkAave : burnFrom (\nliquidator,\nstkAave amount)
+note left : Burn the stkAAVE being redeemed.
+stkAave -> aave : transfer (\nliquidator,\nstkAave amount)
+note left : Transfer AAVE to liquidator.
+activate aave
+return
+return
+
+liq -> aave : balanceOf (liquidator)
+activate aave
+note left : get liquidator's Aave balance.
+return liquidator Aave balance
+
+loop integrations
+liq -> liq : accountForAave()
+note left : account for the redeemed Aave\nfrom each integration contract.
+
+liq -> uni : exactInput (Aave, WBTC, liquidator, liquidator Aave balance)
+activate uni
+note left : swap Aave for WBTC\nusing Uniswap V3.
+return
+
+liq -> usdc : balanceOf (liquidator)
+activate usdc
+note left: get liquidator's WBTC balance.
+return liquidator WBTC balance
+
+liq -> mAsset : mint (WBTC, liquidator WBTC balance)
+activate mAsset
+note left : mints mBTC\nfrom WBTC\nto liquidator.
+mAsset -> usdc : transferFrom (liquidator, integration, liquidator WBTC balance)
+activate usdc
+note left : mBTC transfers WBTC\nfrom liquidator to integration.
+return
+return
+
+liq -> sm : depositLiquidation (\nmBTC,\nmBTCsPurchased)
+activate sm
+note left : Deposit purchased mBTC\nto Savings Manager
+sm -> mAsset : collectInterest()
+activate mAsset
+note left : collects swap\nand redeem fees
+return
+sm -> mAsset : transferFrom (liquidator,\nsavings manager,\nmBTCsPurchased)
+activate mAsset
+note left : transfer mBTC\nfrom liquidator\nto savings manager
+return
+sm -> sm : stream (mBTC,\nmBTCsPurchased + leftover,\nduration)
+note left : Stream mBTC to\nSavings Contract (imBTC)\nover 7 days.
+return
+end
+return
+
+@enduml

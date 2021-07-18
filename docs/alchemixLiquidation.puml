@@ -1,0 +1,139 @@
+@startuml
+
+title "Alchemix (ALCX) integration for the alUSD Feeder Pool on mainnet"
+ 
+actor User as user
+actor Ops as ops
+participant "fPmUSD/alUSD\nFeeder Pool" as fp <<mStable>>
+participant "Liquidator" as liq <<mStable>>
+participant "Alchemix\nIntegration" as int <<mStable>>
+participant "Staking\nPools" as sp <<Alchemix>>
+participant "ALCX" as alcx <<Alchemix>>
+participant "alUSD" as alUSD <<Alchemix>>
+participant "Router V3" as uni <<Uniswap>>
+
+== Setup ==
+
+ops -> int : initialize ()
+activate int
+int -> alUSD : approve (staking pool, infinite amount)
+activate alUSD
+note left: Approve Alchemix staking pool to transfer alUSD.
+return
+int -> alcx : approve (liquidator, infinite amount)
+activate alcx
+note left: Approve Liquidator to transfer ALCX.
+return
+return
+
+ops -> liq : upgrade ()
+activate liq
+liq -> alcx : approve (Uniswap V3, infinite amount)
+activate alcx
+note left : Liquidator approves Uniswap V3\nto transfer infinite ALCX.
+return
+return
+
+== Deposit ==
+
+user -> fp: mint\n(alUSD, amount)
+activate fp
+fp -> alUSD : transferFrom (user, integration, amount)
+activate alUSD
+note left: Transfer alUSD from\nUser to integration.
+return
+fp -> int : deposit (alUSD, amount)
+note left: Deposit to integration if\nalUSD over cache limit.
+activate int
+int -> sp : deposit\n(pool id, amount)
+activate sp
+note left: Map alUSD bAsset\nto Alchemix pool id.
+sp -> alUSD : transferFrom\n(integration, staking pools, amount)
+activate alUSD
+note left: Transfer alUSD from integration\nto alUSD staking pool.
+return
+return
+return
+fp -> fp : mint\n(user, fp amount)
+return
+
+
+== Withdraw ==
+
+user -> fp: redeem\n(alUSD, fp amount)
+activate fp
+fp -> fp : burn\n(user, fp amount)
+fp -> int : withdraw (user, alUSD, amount)
+note left: Withdraw from integration if\nalUSD under cache limit.
+activate int
+int -> sp : withdraw\n(pool id, amount)
+activate sp
+note left: Map alUSD bAsset\nto Alchemix pool id.
+
+sp -> sp : claim (pool id)
+activate sp
+note left: All unclaimed ALCX\nrewards are claimed.
+sp -> alcx : mint (integration, unclaimed ALCX)
+activate alcx
+note left: Mint ALCX rewards\nto integration contract.
+return
+return
+
+sp -> alUSD : transfer\n(integration, amount)
+activate alUSD
+note left: Transfer alUSD from\nstaking pool to integration.
+return
+return
+int -> alUSD : transfer (user, amount)
+activate alUSD
+note left: Transfer alUSD from\nintegration to user.
+return
+return
+return
+
+== Liquidate ==
+
+ops -> int : claimRewards ()
+activate int
+int -> sp : claim (pool id)
+activate sp
+note left : Integration contract claims\naccrued ALCX for alUSD pool.
+sp -> alcx : mint (integration, unclaimed ALCX)
+activate alcx
+note left: Mint ALCX rewards\nto integration contract
+return
+return
+return
+
+...
+
+ops -> liq : triggerLiquidation\n(integration)
+activate liq
+
+liq -> alcx : balanceOf (liquidator)
+activate alcx
+note left : Get liquidator's ALCX balance.
+return liquidator ALCX balance
+
+liq -> alcx : transferFrom\n(integration, liquidator, liquidator alUSD balance)
+activate alcx
+note left : Transfer ALCX from\nintegration to liquidator.
+return
+
+liq -> uni : exactInput (ALCX, ETH, DAI, alUSD, liquidator, liquidator alUSD balance)
+activate uni
+note left : Swap ALCX for alUSD\nusing Uniswap V3 path:\nALCX > ETH > DAI > alUSD
+return
+
+liq -> alUSD : balanceOf (liquidator)
+activate alUSD
+note left: Get liquidator's alUSD balance.
+return liquidator alUSD balance
+
+liq -> alUSD : transfer(integration, liquidator alUSD balance) 
+activate alUSD
+note left: Transfer alUSD to integration\nto increase savings vault price
+return
+return 
+
+@enduml

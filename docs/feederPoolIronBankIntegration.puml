@@ -1,0 +1,63 @@
+@startuml
+
+title "Iron Bank Integration for Feeder Pools with mUSD"
+
+actor User as user
+actor Governor as gov
+participant "GUSD Feeder Pool\nfPmUSD/GUSD" as fp <<mStable>>
+participant "mAsset\nmUSD" as mUSD <<mStable>>
+participant "Iron Bank\nIntegration for\nGUSD Feeder Pool" as int <<mStable>>
+participant "cymUSD" as ib <<Iron Bank>>
+
+gov -> fp : migrateBassets ([mUSD], IB Integration)
+activate fp
+fp -> mUSD : balanceOf (Feeder Pool)
+note left: get mUSD token balance\nin Feeder Pool contract
+activate mUSD
+return mUSD balance
+fp -> mUSD : transfer (Integration Contract, mUSD balance)
+note left
+Transfer all mUSD in Feeder Pool
+to Iron Bank Integration contract.
+An Iron Bank mint is not done until
+a mint, swap or redeem.
+end note
+activate mUSD
+return
+' fp -> int : deposit(mUSD, mUSD balance)
+' activate int
+' return
+return
+
+user -> mUSD : approve (Feeder Pool, mint amount)
+activate mUSD
+return
+
+user -> fp : mint (mUSD, amount)
+activate fp
+fp -> mUSD : transferFrom(user, IB Integration, mint amount)
+activate mUSD
+note left : transfer mint amount from user
+return
+fp -> mUSD : balanceOf(IB Integration)
+activate mUSD
+note left : mUSD balance of\nintegration contract
+return mUSD balance
+fp -> fp : calculateCache(mUSD balance): cache, deposit amount
+note left : calculate new cache size\nand deposit amount
+' activate fp
+' note left : checks if mUSD balance > max cache
+' return cache and deposit amounts
+fp -> int : deposit (mUSD, deposit amount)
+activate int
+note left: only deposit if\nintegration balance > max cache
+int -> ib : mint (deposit amount)
+activate ib
+ib -> mUSD : transferFrom(IB Integration, Iron Bank, deposit amount)
+activate mUSD
+return
+return cymUSD
+return
+return fPmUSD/GUSD
+
+@enduml
