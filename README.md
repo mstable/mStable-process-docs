@@ -6,6 +6,7 @@ A repository of PlantUML diagrams that document the various mStable processes.
 * [Distribute Rewards](./distributions/README.md)
 * [Liquidations](./liquidations/README.md)
 * [Integrations](./integrations/README.md)
+* [BuyBack & Make](./buyBack/README.md)
 
 ## PlantUML
 
@@ -25,13 +26,15 @@ npx puml generate aaveFeedPoolLiquidator.puml -o aaveFeedPoolLiquidator.png
 npx puml generate aaveMusdLiquidation.puml -o aaveMusdLiquidation.png
 npx puml generate aaveMbtcLiquidation.puml -o aaveMbtcLiquidation.png
 npx puml generate compLiquidation.puml -o compLiquidation.png
-npx puml generate distributeRewardsMainnet.puml -o distributeRewardsMainnet.png
-npx puml generate distributeRewardsPolygon.puml -o distributeRewardsPolygon.png
 npx puml generate maticLiquidationPolygon.puml -o maticLiquidationPolygon.png
 
 cd integrations
 npx puml generate alchemixIntegration.puml -o alchemixIntegration.png
 npx puml generate feederPoolIronBankIntegration.puml -o feederPoolIronBankIntegration.png
+
+cd distributions
+npx puml generate distributeRewardsMainnet.puml -o distributeRewardsMainnet.png
+npx puml generate distributeRewardsPolygon.puml -o distributeRewardsPolygon.png
 
 ```
 

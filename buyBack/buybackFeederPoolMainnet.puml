@@ -1,0 +1,80 @@
+@startuml
+
+title "Feeder Pool Buy Back and Make on Mainnet"
+
+actor "Operations" as op
+actor "Governor" as gov
+participant "Interest Validator" as iv <<mStable>>
+participant "Feeder Pool" as fp <<mStable>>
+participant "mAsset\n(mUSD or mBTC)" as musd <<mStable>>
+participant "Savings Manager" as sm <<mStable>>
+participant "Revenue Recipient" as rr <<mStable>>
+participant "Balancer Pool" as bp <<Balancer>>
+
+gov -> iv : collectGovFees\n(feederPools[])
+activate iv
+loop Feeder Pools
+iv -> fp : collectPendingFees ()
+activate fp
+note left: collect 10% of\nswap and redeem fees.
+return
+iv -> fp : balanceOf (inverest validator)
+activate fp
+note left: get the amount of\ngov fees collected.
+return gov fees
+
+iv -> fp : mAsset ()
+activate fp
+note left: get the FP mAsset.\neg mUSD or mBTC
+return mAsset
+iv -> fp : redeem\n(mAsset, gov fees, savings manager)
+activate fp
+note left: convert FP liquidity to mAsset\nand transfer to Savings Manager.
+fp -> musd : transfer\n(Savings Manager,\nmAsset amount)
+activate musd
+note left: transfer mAssets\nfrom Feeder Pool\nto Savings Manager
+return
+return
+end
+return
+
+...
+
+op -> sm : distributeUnallocatedInterest (mAsset)
+activate sm
+sm -> musd : balanceOf (savings manager)
+activate musd
+return Savings Manager's mAssets
+sm -> sm : unallocated ()
+note left: calcualted mAssets not streamed
+sm -> musd : approve\n(revenue recipient,\nunalloacted mAssets)
+activate musd
+return
+sm -> rr : notifyRedistributionAmount\n(mAsset,\nunallocated mAssets)
+activate rr
+rr -> musd : transferFrom\n(savings manager,\nrevenue recipient,\nunallocated mAssets)
+activate musd
+note left: transfer mAssets\nfrom Savings Manager\nto Revenue Recipient
+return
+return
+return
+
+...
+
+op -> rr : depositToPool\n(mAssets[], percentages[])
+activate rr
+loop mAssets
+rr -> musd : balanceOf (revenue recipient)
+activate musd
+return Revenue Recipient's mAssets
+rr -> bp : joinswapExternAmountIn\n(mAsset, deposit)
+activate bp
+bp -> musd : transferFrom\n(revenue recipient, balancer pool, deposit)
+activate musd
+note left: transfer mAssets\nfrom Revenue Recipient\nto Balancer Pool
+return
+return
+end
+return
+
+@enduml
