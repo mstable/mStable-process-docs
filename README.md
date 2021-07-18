@@ -3,8 +3,9 @@
 A repository of PlantUML diagrams that document the various mStable processes.
 
 ## mStable processes
-* [Liquidations](./docs/liquidations.md)
-* [Integrations](./docs/integrations.md)
+* [Distribute Rewards](./distributions/README.md)
+* [Liquidations](./liquidations/README.md)
+* [Integrations](./integrations/README.md)
 
 ## PlantUML
 
@@ -19,16 +20,19 @@ npm i node-plantuml
 ```
 
 ```
-cd docs
+cd liquidations
 npx puml generate aaveFeedPoolLiquidator.puml -o aaveFeedPoolLiquidator.png
 npx puml generate aaveMusdLiquidation.puml -o aaveMusdLiquidation.png
 npx puml generate aaveMbtcLiquidation.puml -o aaveMbtcLiquidation.png
-npx puml generate alchemixLiquidation.puml -o alchemixLiquidation.png
 npx puml generate compLiquidation.puml -o compLiquidation.png
 npx puml generate distributeRewardsMainnet.puml -o distributeRewardsMainnet.png
 npx puml generate distributeRewardsPolygon.puml -o distributeRewardsPolygon.png
-npx puml generate feederPoolIronBankIntegration.puml -o feederPoolIronBankIntegration.png
 npx puml generate maticLiquidationPolygon.puml -o maticLiquidationPolygon.png
+
+cd integrations
+npx puml generate alchemixIntegration.puml -o alchemixIntegration.png
+npx puml generate feederPoolIronBankIntegration.puml -o feederPoolIronBankIntegration.png
+
 ```
 
 ### VS Code extension

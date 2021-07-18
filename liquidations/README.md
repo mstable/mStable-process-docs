@@ -23,3 +23,6 @@ Processes that liquidate platform rewards like COMP, AAVE and Matic
 
 ![AAVE from mUSD Polygon](./maticLiquidationPolygon.png)
 
+## Alchemix (ALCX) from alUSD Feeder Pool
+
+![Alchemix](../integrations/alchemixIntegration.png)
