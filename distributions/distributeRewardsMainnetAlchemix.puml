@@ -1,0 +1,43 @@
+@startuml
+
+title "Distribute MTA and Alchemix (ALCX) rewards on mainnet"
+ 
+actor "Funds Manager" as fm
+participant "RewardsDistributor" as rd <<mStable>>
+participant "alUSD FP Vault\nv-fPmUSD/alUSD" as vault <<mStable>>
+participant "Meta Token\nMTA" as mta <<mStable>>
+participant "Alchemix\nALCX" as alcx <<Alchemix>>
+
+fm -> alcx : transfer (alUSD vault, ALCX amount)
+activate alcx
+note left : tansfer ALCX rewards\nto Feeder Pool Vault
+return
+
+...
+
+fm -> rd : distributeRewards\n(alUSD vault, MTA amount)
+activate rd
+
+rd -> vault : getRewardToken ()
+activate vault
+return MTA token
+rd -> mta : transferFrom (fund manager, alUSD vault, MTA amount)
+note left: transfers MTA to\nalIUSD vault
+activate mta
+return
+rd -> vault : notifyRewardAmount\n(MTA amount)
+activate vault
+note left: Updates rewardRate based\non the rewards in period.
+vault -> vault : updateReward (address(0))
+vault -> alcx : balanceOf (vault)
+activate alcx
+note left : get ALCX balance of vault
+return vault ALCX balance
+vault -> alcx : transfer (platform token vendor, vault ALCX balance)
+activate alcx
+note left : transfer ALCX from vault\nto platform token vendor
+return
+return
+return
+
+@enduml

@@ -35,6 +35,7 @@ npx puml generate feederPoolIronBankIntegration.puml -o feederPoolIronBankIntegr
 cd distributions
 npx puml generate distributeRewardsMainnet.puml -o distributeRewardsMainnet.png
 npx puml generate distributeRewardsPolygon.puml -o distributeRewardsPolygon.png
+puml generate distributeRewardsMainnetAlchemix.puml -o distributeRewardsMainnetAlchemix.png
 
 ```
 
