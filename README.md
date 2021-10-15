@@ -7,6 +7,7 @@ A repository of PlantUML diagrams that document the various mStable processes.
 * [Liquidations](./liquidations/README.md)
 * [Integrations](./integrations/README.md)
 * [BuyBack & Make](./buyBack/README.md)
+* [Emissions](./emissions/README.md)
 
 ## Transaction Traces
 
@@ -41,6 +42,8 @@ npx puml generate distributeRewardsMainnet.puml -o distributeRewardsMainnet.png
 npx puml generate distributeRewardsPolygon.puml -o distributeRewardsPolygon.png
 puml generate distributeRewardsMainnetAlchemix.puml -o distributeRewardsMainnetAlchemix.png
 
+cd emissions
+npx puml generate weeklyEmissions.puml -o weeklyEmissions.png
 ```
 
 ### VS Code extension
