@@ -1,0 +1,82 @@
+@startuml
+
+title "Emissions to Polygon Vaults"
+
+actor Ops as ops
+
+box "Mainnet" #LightGreen
+participant "Emissions Controller" as ec <<mStable>>
+participant "MTA" as mta <<mStable>>
+participant "Root\nv-imUSD Recipient" as rr <<mStable>>
+participant "Root\nChain Manager" as rcm <<Polygon>>
+end box
+
+participant "PoS Bridge" as b <<Polygon>>
+
+box "Polygon" #LightBlue
+participant "Child\nChain Manager" as ccm <<Polygon>>
+participant "Child\nv-imUSD Recipient" as cr <<mStable>>
+participant "Child\nEmissions Controller" as cem <<mStable>>
+participant "Child\nMTA" as cmta <<Polygon>>
+participant "imUSD Vault" as vault <<mStable>>
+end box
+
+actor User as user
+
+activate b
+b -> rcm : on StateSynced
+note right : watch for\nStateSync events
+
+ops -> ec : distributeRewards ([dial ids])
+activate ec
+ec -> mta: transfer(Root Recipient, rewards)
+activate mta
+note left: transfer MTA\nfrom Emissions Controller\nto Root Recipient
+return
+ec -> rr: notifyRewardAmount(rewards)
+activate rr
+rr -> rcm : depositFor (\nChild Recipient,\nMTA,\namount)
+activate rcm
+rcm -> mta : transferFrom (\nRoot Recipient,\nRoot Chain Manager,\namount)
+note right : transfer MTA\nfrom Recipient\nto Bridge
+activate mta
+return
+return
+note right : emit StateSynced event
+return
+return
+
+rcm -> b : StateSynced (\nid\nreceiver,\ndata)
+b -> ccm : onStateReceived (\nid\nreceiver,\ndata)
+activate ccm
+ccm -> cmta : deposit (Child Recipient, amount)
+activate cmta
+cmta -> cmta : mint ()
+note left : mints MTA\nto Child Recipient
+return
+return
+
+==== 3-5 Minutes for sync ====
+
+ops -> cem : distributeRewards ([imUSD Vault])
+activate cem
+cem -> cmta : transferFrom (\nChild Recipient,\nimUSD Vault,\namount)
+activate cmta
+note left: transfer MTA\nfrom Child Recipient\nto imUSD Vault
+return
+cem -> vault : notifyRewardAmount (amount)
+activate vault
+return
+return
+
+==== After rewards have accrued ====
+
+user -> vault: claimRewards ()
+activate vault
+vault -> cmta: transfer(user, rewards)
+activate cmta
+note left: transfer MTA\nfrom Vault\nto User
+return
+return
+
+@enduml

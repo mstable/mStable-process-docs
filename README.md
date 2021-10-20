@@ -44,6 +44,8 @@ puml generate distributeRewardsMainnetAlchemix.puml -o distributeRewardsMainnetA
 
 cd emissions
 npx puml generate weeklyEmissions.puml -o weeklyEmissions.png
+npx puml generate polygonBridge_frax.puml -o polygonBridge_frax.png
+npx puml generate polygonBridge_vimUSD.puml -o polygonBridge_vimUSD.png
 ```
 
 ### VS Code extension
