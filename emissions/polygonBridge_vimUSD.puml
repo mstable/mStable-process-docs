@@ -7,7 +7,7 @@ actor Ops as ops
 box "Mainnet" #LightGreen
 participant "Emissions Controller" as ec <<mStable>>
 participant "MTA" as mta <<mStable>>
-participant "Root\nv-imUSD Recipient" as rr <<mStable>>
+participant "v-imUSD\nBridge Forwarder" as rr <<mStable>>
 participant "Root\nChain Manager" as rcm <<Polygon>>
 end box
 
@@ -15,10 +15,10 @@ participant "PoS Bridge" as b <<Polygon>>
 
 box "Polygon" #LightBlue
 participant "Child\nChain Manager" as ccm <<Polygon>>
-participant "Child\nv-imUSD Recipient" as cr <<mStable>>
-participant "Child\nEmissions Controller" as cem <<mStable>>
-participant "Child\nMTA" as cmta <<Polygon>>
-participant "imUSD Vault" as vault <<mStable>>
+participant "Polygon MTA" as pmta <<Polygon>>
+participant "v-imUSD\nL2 Bridge Recipient" as cr <<mStable>>
+participant "Polygon\nEmissions Controller" as cem <<mStable>>
+participant "Polygon\nimUSD Vault" as vault <<mStable>>
 end box
 
 actor User as user
@@ -29,7 +29,7 @@ note right : watch for\nStateSync events
 
 ops -> ec : distributeRewards ([dial ids])
 activate ec
-ec -> mta: transfer(Root Recipient, rewards)
+ec -> mta: transfer(\nRoot Recipient,\nrewards)
 activate mta
 note left: transfer MTA\nfrom Emissions Controller\nto Root Recipient
 return
@@ -49,9 +49,9 @@ return
 rcm -> b : StateSynced (\nid\nreceiver,\ndata)
 b -> ccm : onStateReceived (\nid\nreceiver,\ndata)
 activate ccm
-ccm -> cmta : deposit (Child Recipient, amount)
-activate cmta
-cmta -> cmta : mint ()
+ccm -> pmta : deposit (\nChild Recipient,\namount)
+activate pmta
+pmta -> pmta : mint ()
 note left : mints MTA\nto Child Recipient
 return
 return
@@ -60,11 +60,11 @@ return
 
 ops -> cem : distributeRewards ([imUSD Vault])
 activate cem
-cem -> cmta : transferFrom (\nChild Recipient,\nimUSD Vault,\namount)
-activate cmta
+cem -> pmta : transferFrom (\nChild Recipient,\nimUSD Vault,\namount)
+activate pmta
 note left: transfer MTA\nfrom Child Recipient\nto imUSD Vault
 return
-cem -> vault : notifyRewardAmount (amount)
+cem -> vault : notifyRewardAmount (\namount)
 activate vault
 return
 return
@@ -73,8 +73,8 @@ return
 
 user -> vault: claimRewards ()
 activate vault
-vault -> cmta: transfer(user, rewards)
-activate cmta
+vault -> pmta: transfer(user, rewards)
+activate pmta
 note left: transfer MTA\nfrom Vault\nto User
 return
 return

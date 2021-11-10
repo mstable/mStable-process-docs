@@ -7,7 +7,7 @@ actor Ops as ops
 box "Mainnet" #LightGreen
 participant "Emissions Controller" as ec <<mStable>>
 participant "MTA" as mta <<mStable>>
-participant "Root\nFRAX Recipient" as rr <<mStable>>
+participant "FRAX\nBridge Forwarder" as bf <<mStable>>
 participant "Root\nChain Manager" as rcm <<Polygon>>
 end box
 
@@ -15,8 +15,8 @@ participant "PoS Bridge" as b <<Polygon>>
 
 box "Polygon" #LightBlue
 participant "Child\nChain Manager" as ccm <<Polygon>>
-participant "FRAX Farm" as cr <<FRAX>>
-participant "Child\nMTA" as cmta <<Polygon>>
+participant "FRAX Farm\nL2 Bridge Recipient" as cr <<FRAX>>
+participant "Polygon MTA" as pmta <<Polygon>>
 end box
 
 actor User as user
@@ -31,9 +31,9 @@ ec -> mta: transfer(Root Recipient, rewards)
 activate mta
 note left: transfer MTA\nfrom Emissions Controller\nto Root Recipient
 return
-ec -> rr: notifyRewardAmount(rewards)
-activate rr
-rr -> rcm : depositFor (\nFRAX Farm,\nMTA,\namount)
+ec -> bf: notifyRewardAmount(rewards)
+activate bf
+bf -> rcm : depositFor (\nFRAX Farm,\nMTA,\namount)
 activate rcm
 rcm -> mta : transferFrom (\nRoot Recipient,\nRoot Chain Manager,\namount)
 note right : transfer MTA\nfrom Recipient\nto Bridge
@@ -47,9 +47,9 @@ return
 rcm -> b : StateSynced (\nid\nreceiver,\ndata)
 b -> ccm : onStateReceived (\nid\nreceiver,\ndata)
 activate ccm
-ccm -> cmta : deposit (FRAX Farm, amount)
-activate cmta
-cmta -> cmta : mint ()
+ccm -> pmta : deposit (FRAX Farm, amount)
+activate pmta
+pmta -> pmta : mint ()
 note left : mints MTA\nto FRAX Farm
 return
 return
@@ -58,8 +58,8 @@ return
 
 user -> cr : getRewards ()
 activate cr
-cr -> cmta : transfer (\nuser,\nrewards)
-activate cmta
+cr -> pmta : transfer (\nuser,\nrewards)
+activate pmta
 note left: transfer MTA\nfrom FRAX Farm\nto User
 return
 return

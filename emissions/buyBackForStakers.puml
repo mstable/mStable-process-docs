@@ -1,0 +1,128 @@
+@startuml
+
+title "MTA Buy Back for Stakers on Mainnet"
+
+actor "Operations" as op
+participant "mAsset\n(mUSD or mBTC)" as musd <<mStable>>
+participant "Savings Manager" as sm <<mStable>>
+participant "Revenue BuyBack" as rr <<mStable>>
+participant "Emissions Controller" as ec <<mStable>>
+participant "Staking Contracts" as sc <<mStable>>
+participant "MTA" as mta <<mStable>>
+participant "UniSwap V3" as uni <<Uniswap>>
+participant "bAsset\n(USDC or wBTC)" as b <<3rd Party>>
+actor "User" as user
+
+op -> sm : distributeUnallocatedInterest (mAsset)
+activate sm
+sm -> musd : balanceOf (savings manager)
+activate musd
+return Savings Manager's mAssets
+sm -> sm : unallocated ()
+note left: Calc mAssets not streamed
+sm -> musd : approve\n(revenue recipient,\nunalloacted mAssets)
+activate musd
+return
+sm -> rr : notifyRedistributionAmount\n(mAsset,\nunallocated mAssets)
+activate rr
+rr -> musd : transferFrom\n(savings manager,\nrevenue recipient,\nunallocated mAssets)
+activate musd
+note left: Transfer mAssets\nfrom Savings Manager\nto Revenue Recipient
+return
+return
+return
+
+...
+
+op -> rr : buyRewards (mAssets[])
+activate rr
+loop mAssets
+rr -> musd : balanceOf (Revenue BuyBack)
+activate musd
+return Revenue BuyBack's mAssets
+rr -> musd : redeem (bAsset, mAssets bal, min Bassets)
+activate musd
+note left : Redeem mAssets like mUSD and mBTC\nfor bAssets like USDC and wBTC
+musd -> musd : burn (Revenue BuyBack, bAssets amount)
+note left: Burn mAssets like mUSD or mBTC\nfrom Revenue BuyBack
+musd -> b : transfer (Revenue BuyBack, bAssets amount)
+activate b
+note left: Transfer bAssets like USDC or wBTC\nfrom mAssets like mUSD or mBTC\nto Revenue BuyBack
+return
+return bAssets amount
+
+rr -> uni : exactInput (uniswap path, bAsset amount, min rewards)
+activate uni
+note left : Swap bAssets like USDC or wBTC\nfor MTA rewards
+uni -> b : transferFrom (\nRevenue BuyBack,\nUniswap,\nbAssets amount)
+activate b
+return
+uni -> mta : transfer (\nRevenue BuyBack,\nMTA amount)
+activate mta
+return
+return
+end
+return
+
+
+' Donate MTA to staking contract dials in the Emissions Controller
+op -> rr : donateRewards()
+activate rr
+loop staking contracts
+rr -> ec : dials (dialId)
+activate ec
+return staking contract address
+rr -> sc : totalSupply()
+activate sc
+return voting power
+end
+
+rr -> mta : balanceOf (Revenue BuyBack)
+activate mta
+return MTA balance
+
+rr -> rr : caluclate dial rewards ()
+note left : Proportion MTA to staking contracts\nbased on voting power
+
+rr -> mta : approve (Emission Controller, MTA balance)
+activate mta
+return
+
+rr -> ec : donate (dial ids[], reward amounts[])
+activate ec
+note left : Donate MTA to each staking contract
+ec -> mta : transferFrom\n(Revenue BuyBack,\nEmissions Controller,\nMTA amount)
+activate mta
+note left : Transfer MTA\nfrom Revenue BuyBack\nto Emissions Controller
+return
+return
+
+return
+
+==== Weekly Rewards Distribution ====
+
+op -> ec : distributeRewards (dials ids[])
+activate ec
+loop dial ids
+ec -> mta : transfer(staking contract, reward amount)
+activate mta
+note left: Transfer MTA\nfrom Emissions Controller\nto Staking Contract
+return
+ec -> sc : notifyRewardAmount (reward amount)
+activate sc
+return
+end
+return
+
+
+==== After rewards have accrued ====
+
+user -> sc: claimRewards ()
+activate sc
+sc -> mta: transfer(User, rewards)
+activate mta
+note left: Transfer MTA\nfrom Staking Contract\nto User
+return
+return
+
+@enduml
