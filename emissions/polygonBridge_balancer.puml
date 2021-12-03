@@ -1,6 +1,6 @@
 @startuml
 
-title "Emissions to Polygon FRAX"
+title "Emissions to Polygon Balancer Pool"
 
 actor Ops as ops
 
@@ -13,13 +13,16 @@ end box
 
 participant "PoS Bridge" as b <<Polygon>>
 
+participant "Balancer\nMining\nScript" as bms <<Balancer>>
+
 box "Polygon" #LightBlue
 participant "Child\nChain Manager" as ccm <<Polygon>>
-participant "FRAX Farm" as cr <<FRAX>>
+participant "Disperse Forwarder" as df <<mStable>>
+participant "Disperse" as d <<Disperse.app>>
 participant "Polygon MTA" as pmta <<Polygon>>
 end box
 
-actor User as user
+actor Users as user
 
 activate b
 b -> rcm : on StateSynced
@@ -47,21 +50,37 @@ return
 rcm -> b : StateSynced (\nid\nreceiver,\ndata)
 b -> ccm : onStateReceived (\nid\nreceiver,\ndata)
 activate ccm
-ccm -> pmta : deposit (FRAX Farm, amount)
+ccm -> pmta : deposit (Disperse Forwarder, amount)
 activate pmta
 pmta -> pmta : mint ()
-note left : mints MTA\nto FRAX Farm
+note left : mints MTA\nto Disperse Forwarder
 return
 return
 
-==== After rewards have accrued ====
+====
 
-user -> cr : getRewards ()
-activate cr
-cr -> pmta : transfer (\nuser,\nrewards)
+ops -> bms : get liquidity report
+activate bms
+note left: get file from GitHub repo
+return json file of pool liquidity providers
+
+ops -> ops : task to proportion rewards (json file)
+
+ops -> df : disperseToken (recipients,[] values[])
+activate df
+df -> pmta : approve (Disperse, total rewards)
 activate pmta
-note left: transfer MTA\nfrom FRAX Farm\nto User
+return
+df -> d : disperseTokenSimple
+activate d
+loop recipients 
+d -> pmta : transferFrom (Disperse Forwarder, recipient, value)
+activate pmta
+note left: Transfer MTA\nfrom Disperse Forwarder\nto each recipient
+return
+end
 return
 return
+
 
 @enduml

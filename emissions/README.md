@@ -17,3 +17,7 @@ Processes distribute MTA rewards to dials using voting power.
 ### Distribution to FRAX Farm on Polygon
 
 ![Polygon Bridge FRAX](./polygonBridge_frax.png)
+
+### Distribution to Balancer Pool liquidity providers on Polygon
+
+![Polygon Bridge Balancer](./polygonBridge_balancer.png)
