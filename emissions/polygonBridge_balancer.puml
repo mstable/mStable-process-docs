@@ -7,7 +7,7 @@ actor Ops as ops
 box "Mainnet" #LightGreen
 participant "Emissions Controller" as ec <<mStable>>
 participant "MTA" as mta <<mStable>>
-participant "FRAX\nBridge Forwarder" as bf <<mStable>>
+participant "Disperse\nBridge Forwarder" as bf <<mStable>>
 participant "Root\nChain Manager" as rcm <<Polygon>>
 end box
 
@@ -17,7 +17,7 @@ participant "Balancer\nMining\nScript" as bms <<Balancer>>
 
 box "Polygon" #LightBlue
 participant "Child\nChain Manager" as ccm <<Polygon>>
-participant "Disperse Forwarder" as df <<mStable>>
+participant "Disperse\nForwarder" as df <<mStable>>
 participant "Disperse" as d <<Disperse.app>>
 participant "Polygon MTA" as pmta <<Polygon>>
 end box
@@ -36,7 +36,7 @@ note left: transfer MTA\nfrom Emissions Controller\nto Root Recipient
 return
 ec -> bf: notifyRewardAmount(rewards)
 activate bf
-bf -> rcm : depositFor (\nFRAX Farm,\nMTA,\namount)
+bf -> rcm : depositFor (\nDisperse Forwarder,\nMTA,\namount)
 activate rcm
 rcm -> mta : transferFrom (\nRoot Recipient,\nRoot Chain Manager,\namount)
 note right : transfer MTA\nfrom Recipient\nto Bridge
