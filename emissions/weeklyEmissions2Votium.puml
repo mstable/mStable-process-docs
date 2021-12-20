@@ -1,0 +1,51 @@
+@startuml
+
+title "Weekly Rewards to Votium Bribe"
+
+actor User as user
+actor Ops as ops
+participant "Emissions Controller" as ec <<mStable>>
+participant "Votium Forwarder" as vf <<mStable>>
+participant "MTA" as mta <<mStable>>
+participant "Votium Briber" as vb <<Votium>>
+
+user -> ec: setVoterDialWeights ([dial ids], [weights])
+activate ec
+note right: proportions voting power across dials\nfor future distributions
+return
+
+==== After Thursday 00:00 UTC ====
+
+ops -> ec : calculateRewards ()
+activate ec
+note right: Calculates and stores\nrewards for each dial
+return
+
+ops -> ec : distributeRewards ([votium dial id])
+activate ec
+loop Dials
+ec -> mta: transfer(votium forwarder, rewards)
+activate mta
+note left: transfer MTA\nfrom Emissions Controller\nto Votium forwarder
+return
+end
+return
+
+ops -> vf : depositBribe (amount, proposal)
+activate vf
+vf -> mta : balanceOf (\nVotium Forwarder)
+activate mta
+return balance
+vf -> mta : approve (\nVotium Bribe, amount)
+activate mta
+return
+vf -> vb : depositBribe (\nMTA,\namount,\nproposal,\nchoiceIndex)
+activate vb
+vb -> mta : transferFrom (\nVotium Forwarder,\nVotium Briber,\namount)
+activate mta
+note left: transfer MTA\nfrom Votium Forwarder\nto Votium Briber
+return
+return
+return
+
+@enduml

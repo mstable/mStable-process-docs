@@ -44,6 +44,8 @@ puml generate distributeRewardsMainnetAlchemix.puml -o distributeRewardsMainnetA
 
 cd emissions
 npx puml generate weeklyEmissions.puml -o weeklyEmissions.png
+npx puml generate weeklyEmissions2TreasuryDAO.puml -o weeklyEmissions2TreasuryDAO.png
+npx puml generate weeklyEmissions2Votium.puml -o weeklyEmissions2Votium.png
 npx puml generate polygonBridge_frax.puml -o polygonBridge_frax.png
 npx puml generate polygonBridge_vimUSD.puml -o polygonBridge_vimUSD.png
 npx puml generate polygonBridge_balancer.puml -o polygonBridge_balancer.png

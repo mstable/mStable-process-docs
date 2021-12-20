@@ -1,0 +1,42 @@
+@startuml
+
+title "Weekly Rewards to Treasury DAO"
+
+actor User as user
+actor Ops as ops
+participant "Emissions\nController" as ec <<mStable>>
+participant "Basic\nRewards\nForwarder" as brf <<mStable>>
+participant "MTA" as mta <<mStable>>
+participant "Treasury DAO" as dao <<mStable>>
+
+user -> ec: setVoterDialWeights (\n[dial ids], [weights])
+activate ec
+note right: proportions voting power across dials\nfor future distributions
+return
+
+==== After Thursday 00:00 UTC ====
+
+ops -> ec : calculateRewards ()
+activate ec
+note right: Calculates and stores\nrewards for each dial
+return
+
+ops -> ec : distributeRewards (\n[treasury dial id])
+activate ec
+loop Dials
+ec -> mta: transfer(\nbasic rewards forwarder,\nrewards)
+activate mta
+note left: transfer MTA\nfrom Emissions Controller\nto Basic Rewards Forwarder
+return
+ec -> brf : notifyRewardAmount (rewards)
+activate brf
+brf -> mta: transfer(\nbasic rewards forwarder,\nrewards)
+activate mta
+note left: transfer MTA\nfrom Basic Rewards Forwarder\nto Treasury DAO
+return
+return
+end
+return
+
+
+@enduml

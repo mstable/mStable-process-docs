@@ -1,6 +1,6 @@
 @startuml
 
-title "Weekly Rewards Distribution"
+title "Weekly Rewards to Vaults"
 
 actor User as user
 actor Ops as ops
