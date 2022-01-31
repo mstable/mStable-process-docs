@@ -1,0 +1,66 @@
+@startuml
+
+title "Redeem imUSD in Vault for BUSD tokens using Feeder Pool"
+
+actor "Staker" as user
+participant "Vault\n(v-imUSD)" as vault <<mStable>>
+participant "Interest\nBearing\nmAsset\n(imUSD)" as imusd <<mStable>>
+participant "Savings\nManager" as sm <<mStable>>
+participant "mAsset\n(mUSD)" as musd <<mStable>>
+participant "Unwrapper" as wrapper <<mStable>>
+participant "Feeder Pool\n(fPmUSD/BUSD)" as fp <<mStable>>
+participant "fAsset\n(BUSD)" as busd <<Binance>>
+
+user -> vault : withdrawAndUnwrap (\nimUSD units,\nmin BUSD units,\nBUSD,\nbeneficiary,\nBUSD Feeder Pool,\nfalse)
+activate vault
+note left: withdraw imUSD for\nBUSD tokens using\nBUSD Feeder Pool
+vault -> imusd : redeemAndUnwrap (\nimUSD units,\ntrue,\nmin BUSD units,\nBUSD,\nbeneficiary,\nBUSD Feeder Pool, false)
+activate imusd
+
+imusd -> sm : collectAndDistributeInterest (\nmUSD)
+activate sm
+note left: collect swap and redeem fees
+return
+
+imusd -> imusd : _redeem (\nimUSD units,\ntrue,\nfalse)
+activate imusd
+note left: redeem imUSD for mUSD but do not transfer mUSD to beneficiary
+return imUSD burned,\nmUSD redeemed
+
+imusd -> musd : approve (\nUnwrapper,\nmUSD redeemed)
+activate musd
+note left: approve Unwrapper to transfer redeemed mUSD from imUSD
+return
+
+imusd -> wrapper : unwrapAndSend (\ntrue,\nBUSD Feeder Pool,\nmUSD,\nBUSD,\nmUSD redeemed,\nmin BUSD units,\nbeneficiary)
+activate wrapper
+note left: swap redeemed mUSD for BUSD tokens using BUSD Feeder Pool.
+wrapper -> musd : transferFrom (\nimUSD,\nwrapper,\nmUSD redeemed)
+activate musd 
+note left: transfer mUSD from imUSD to Unwrapper
+return
+
+wrapper -> fp : swap (\nmUSD,\nBUSD,\nredeemed mUSD,\nmin BUSD units,\nbeneficiary)
+activate fp
+note left: swap mUSD for BUSD
+fp -> musd : transferFrom (\nimUSD,\nBUSD Feeder Pool,\nredeemed mUSD)
+activate musd
+note left: transfer mUSD\nfrom imUSD\nto BUSD Feeder Pool
+return
+
+fp -> fp : computeSwap()
+activate fp 
+note left: calc BUSD output in exchange for mUSD input
+return BUSD swap output
+fp -> busd : transfer (\nbeneficiary,\nswap output)
+activate busd
+note left: transfer BUSD\nfrom Feeder Pool\nto beneficiary
+return
+return BUSD swap output
+
+return BUSD swap output
+
+return imUSD burned,\nmUSD returned
+return
+
+@enduml

@@ -8,6 +8,7 @@ A repository of PlantUML diagrams that document the various mStable processes.
 * [Integrations](./integrations/README.md)
 * [BuyBack & Make](./buyBack/README.md)
 * [Emissions](./emissions/README.md)
+* [Unwrapper](./unwrapper/README.md)
 
 ## Transaction Traces
 
@@ -50,6 +51,12 @@ npx puml generate polygonBridge_frax.puml -o polygonBridge_frax.png
 npx puml generate polygonBridge_vimUSD.puml -o polygonBridge_vimUSD.png
 npx puml generate polygonBridge_balancer.puml -o polygonBridge_balancer.png
 npx puml generate buyBackForStakers.puml -o buyBackForStakers.png
+
+cd unwrapper
+npx puml generate imusd_vault_bassets.puml -o imusd_vault_bassets.png
+npx puml generate imusd_bassets.puml -o imusd_bassets.png
+npx puml generate imusd_vault_busd.puml -o imusd_vault_busd.png
+npx puml generate imusd_busd.puml -o imusd_busd.png
 ```
 
 ### VS Code extension

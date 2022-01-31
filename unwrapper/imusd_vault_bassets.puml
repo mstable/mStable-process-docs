@@ -1,0 +1,65 @@
+@startuml
+
+title "Redeem imUSD in Vault for bAsset tokens using mAsset"
+
+actor "Staker" as user
+participant "Vault\n(v-imUSD)" as vault <<mStable>>
+participant "Interest\nBearing\nmAsset\n(imUSD)" as imusd <<mStable>>
+participant "Savings\nManager" as sm <<mStable>>
+participant "mAsset\n(mUSD)" as musd <<mStable>>
+participant "Unwrapper" as wrapper <<mStable>>
+participant "Platform\nIntegration" as pi <<mStable>>
+
+user -> vault : withdrawAndUnwrap (\nimUSD units,\nmin bAsset units,\nbAsset,\nbeneficiary,\nmUSD,\ntrue)
+activate vault
+note left: withdraw imUSD\nfor bAsset tokens\nusing mUSD mAsset
+vault -> imusd : redeemAndUnwrap (\nimUSD units,\ntrue,\nmin bAsset units,\nbAsset,\nbeneficiary,\nmUSD, true)
+activate imusd
+
+imusd -> sm : collectAndDistributeInterest (\nmUSD)
+activate sm
+note left: collect swap and redeem fees
+return
+
+imusd -> imusd : _redeem (\nimUSD units,\ntrue,\nfalse)
+activate imusd
+note left: redeem imUSD for mUSD but do not transfer mUSD to beneficiary
+return imUSD burned,\nmUSD redeemed
+
+imusd -> musd : approve (\nUnwrapper,\nmUSD redeemed)
+activate musd
+note left: approve Unwrapper to transfer redeemed mUSD from imUSD
+return
+
+imusd -> wrapper : unwrapAndSend (\ntrue,\nmUSD,\nmUSD,\nbAsset,\nmUSD redeemed,\nmmin bAsset units,\nbeneficiary)
+activate wrapper
+note left: swap redeemed mUSD for bAssets.
+wrapper -> musd : transferFrom (\nimUSD,\nwrapper,\nmUSD redeemed)
+activate musd 
+note left: transfer mUSD from imUSD to Unwrapper
+return
+wrapper -> musd : redeem (\nbAsset,\nmUSD redeemed,\nmin bAssets unit,\nbeneficiary)
+activate musd
+note left: redeem mUSD for bAssets
+musd -> musd : burn (\nimUSD,\nmUSD redeemed)
+note left: burn redeemed mUSD in imUSD
+musd -> musd : computeRedeem()
+activate musd 
+note left: calc bAsset units in exchange for redeemed mUSD
+return redeemed bAssets
+musd -> pi : withdrawRaw (\nbeneficiary,\nbAsset,\nredeemed bAssets)
+activate pi
+note left: withdraw bAssets from Platform Integration to beneficiary
+pi -> bAsset : transfer (\nbeneficiary,\nredeemed bAssets)
+activate bAsset
+note left: transfer bAssets from Platform Integration to beneficiary
+return
+return
+return bAssets redeemed
+
+return bAssets redeemed
+
+return imUSD burned,\nmUSD returned
+return
+
+@enduml

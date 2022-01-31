@@ -1,0 +1,62 @@
+@startuml
+
+title "Redeem imUSD for BUSD tokens using Feeder Pool"
+
+actor "Saver" as user
+participant "Interest\nBearing\nmAsset\n(imUSD)" as imusd <<mStable>>
+participant "Savings\nManager" as sm <<mStable>>
+participant "mAsset\n(mUSD)" as musd <<mStable>>
+participant "Unwrapper" as wrapper <<mStable>>
+participant "Feeder Pool\n(fPmUSD/BUSD)" as fp <<mStable>>
+participant "fAsset\n(BUSD)" as busd <<Binance>>
+
+user -> imusd : redeemAndUnwrap (\nimUSD units,\ntrue,\nmin BUSD units,\nBUSD,\nbeneficiary,\nBUSD Feeder Pool, false)
+activate imusd
+note left: redeem imUSD\nfor bAsset tokens\nusing mUSD mAsset
+
+imusd -> sm : collectAndDistributeInterest (\nmUSD)
+activate sm
+note left: collect swap and redeem fees
+return
+
+imusd -> imusd : _redeem (\nimUSD units,\ntrue,\nfalse)
+activate imusd
+note left: redeem imUSD for mUSD\nbut do not transfer mUSD to beneficiary
+return imUSD burned,\nmUSD redeemed
+
+imusd -> musd : approve (\nUnwrapper,\nmUSD redeemed)
+activate musd
+note left: approve Unwrapper to transfer\nredeemed mUSD from imUSD
+return
+
+imusd -> wrapper : unwrapAndSend (\ntrue,\nBUSD Feeder Pool,\nmUSD,\nBUSD,\nmUSD redeemed,\nmmin BUSDs,\nbeneficiary)
+activate wrapper
+note left: swap redeemed mUSD\nfor BUSD tokens\nusing BUSD Feeder Pool.
+wrapper -> musd : transferFrom (\nimUSD,\nwrapper,\nmUSD redeemed)
+activate musd 
+note left: transfer mUSD from imUSD to Unwrapper
+return
+
+wrapper -> fp : swap (\nmUSD,\nBUSD,\nredeemed mUSD,\nmin BUSD units,\nbeneficiary)
+activate fp
+note left: swap mUSD for BUSD
+fp -> musd : transferFrom (\nimUSD,\nBUSD Feeder Pool,\nredeemed mUSD)
+activate musd
+note left: transfer mUSD\nfrom imUSD\nto BUSD Feeder Pool
+return
+
+fp -> fp : computeSwap()
+activate fp 
+note left: calc BUSD output in exchange for mUSD input
+return BUSD swap output
+fp -> busd : transfer (\nbeneficiary,\nswap output)
+activate busd
+note left: transfer BUSD\nfrom Feeder Pool\nto beneficiary
+return
+return BUSD swap output
+
+return BUSD swap output
+
+return imUSD burned,\nmUSD returned
+
+@enduml
