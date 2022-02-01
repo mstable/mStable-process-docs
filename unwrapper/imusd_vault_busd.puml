@@ -60,7 +60,7 @@ return BUSD swap output
 
 return BUSD swap output
 
-return imUSD burned,\nmUSD returned
+return imUSD burned,\nmUSD redeemed,\nBUSD swap output
 return
 
 @enduml

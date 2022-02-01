@@ -20,12 +20,12 @@ return
 
 imusd -> imusd : _redeem (\nimUSD units,\ntrue,\nfalse)
 activate imusd
-note left: redeem imUSD for mUSD but do not transfer mUSD to beneficiary
+note left: redeem imUSD for mUSD\nbut do not transfer mUSD to beneficiary
 return imUSD burned,\nmUSD redeemed
 
 imusd -> musd : approve (\nUnwrapper,\nmUSD redeemed)
 activate musd
-note left: approve Unwrapper to transfer redeemed mUSD from imUSD
+note left: approve Unwrapper to transfer\nredeemed mUSD from imUSD
 return
 
 imusd -> wrapper : unwrapAndSend (\ntrue,\nmUSD,\nmUSD,\nbAsset,\nmUSD redeemed,\nmmin bAsset units,\nbeneficiary)
@@ -35,7 +35,7 @@ wrapper -> musd : transferFrom (\nimUSD,\nwrapper,\nmUSD redeemed)
 activate musd 
 note left: transfer mUSD from imUSD to Unwrapper
 return
-wrapper -> musd : redeem (\nbAsset,\nmUSD redeemed,\nmin bAssets unit,\nbeneficiary)
+wrapper -> musd : redeem (\nbAsset,\nmUSD redeemed,\nmin bAsset units,\nbeneficiary)
 activate musd
 note left: redeem mUSD for bAssets
 musd -> musd : burn (\nimUSD,\nmUSD redeemed)
@@ -43,19 +43,19 @@ note left: burn redeemed mUSD in imUSD
 musd -> musd : computeRedeem()
 activate musd 
 note left: calc bAsset units in exchange for redeemed mUSD
-return redeemed bAssets
-musd -> pi : withdrawRaw (\nbeneficiary,\nbAsset,\nredeemed bAssets)
+return bAsset redeem output
+musd -> pi : withdrawRaw (\nbeneficiary,\nbAsset,\nbAsset redeem output)
 activate pi
 note left: withdraw bAssets from Platform Integration to beneficiary
-pi -> bAsset : transfer (\nbeneficiary,\nredeemed bAssets)
+pi -> bAsset : transfer (\nbeneficiary,\nbAsset redeem output)
 activate bAsset
 note left: transfer bAssets from Platform Integration to beneficiary
 return
 return
-return bAssets redeemed
+return bAsset redeem output
 
-return bAssets redeemed
+return bAsset redeem output
 
-return imUSD burned,\nmUSD returned
+return imUSD burned,\nmUSD redeemed,\nbAsset redeem output
 
 @enduml
