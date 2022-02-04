@@ -72,7 +72,9 @@ end
 
 ... **Daily** ...
 
-group Collect Interest
+== Collect Trading Fees and Platform Interest ==
+
+group Collect Trading Fees
 musd -> sm : mUSD swap and\nredeem fees
 sm -> imusd : 90% mUSD
 sm -> sm : 10% mUSD gov fee
@@ -91,6 +93,8 @@ end
 
 ... **Weekly** ...
 
+== Collect Compound Rewards ==
+
 group Claim COMP
 comp -> cint : COMP rewards
 end
@@ -107,22 +111,32 @@ sm -> imusd : 90% mUSD\nstreamed over\n1 week
 sm -> sm : 10% mUSD gov fee
 end
 
-group Revenue Buy Back
-sm -> rr : mUSD gov fee
-rr -> musd : mUSD
-musd -> rr : USDC
-rr -> uni : USDC
-uni -> rr : MTA
-rr -> ec : MTA
+== MTA Emissions to Dials ==
+
+group Distribute Gov Fees
+sm -> rr : mUSD gov fees
 end
 
-group Emissions
+group Buy Back MTA
+rr -> musd : mUSD gov fees
+musd -> rr : USDC
+rr -> uni : USDC
+uni -> rr : MTA Purchased
+end
+
+group Donate MTA to Staking Dials
+rr -> ec : MTA Purchased
+end
+
+group Distribute to Dials
+ec -> staker : MTA Purchased\nMTA Emissions
 ec -> vimusd : MTA Emissions
 vimusd -> user : MTA
-ec -> staker : MTA Revenue\nMTA Emissions
 end
 
 ... **10 Days** ...
+
+== Collect Aave Rewards ==
 
 group Claim stkAAVE
 aave -> aint : stkAAVE rewards

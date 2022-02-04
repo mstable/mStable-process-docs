@@ -71,7 +71,9 @@ end
 
 ... **Daily** ...
 
-group Collect Interest
+== Collect Trading Fees, Platform Interest and Platform Rewards ==
+
+group Collect Trading Fees
 musd -> sm : mUSD swap and\nredeem fees
 sm -> imusd : 90% mUSD
 sm -> sm : 10% mUSD gov fee
@@ -79,38 +81,17 @@ end
 
 group Collect Platform Interest
 aave -> musd : USDC, DAI, USDT and sUSD interest
-note left : increased aToken exchange rates
+note left : increased aToken\nexchange rates
 musd -> sm : mUSD
 sm -> imusd : 90% mUSD\nstreamed over\n1 day
 sm -> sm : 10% mUSD gov fee
 end
 
-... **Weekly** ...
-
-group Revenue Buy Back
-sm -> rr : mUSD gov fee
-rr -> ops : mUSD
-ops -> emusd : mUSD
-emusd -> ops : USDC
-ops -> uni : USDC
-uni -> ops : MTA
-ops -> ec : MTA
-end
-
-group Emissions
-ec -> pec: MTA Emissions
-pec -> vimusd : MTA
-vimusd -> user : MTA
-ec -> staker : MTA Revenue\nMTA Emissions
-end
-
-... **10 Days** ...
-
-group Claim Rewards
+group Claim Platform Rewards
 aave -> int : WMATIC rewards
 end
 
-group Liquidate Rewards
+group Liquidate Platform Rewards
 int -> liq : WMATIC
 liq -> qs : WMATIC
 qs -> liq : USDC
@@ -119,6 +100,32 @@ musd -> liq : mUSD
 liq -> sm : mUSD
 sm -> imusd : 90% mUSD\nstreamed over\n1 day
 sm -> sm : 10% mUSD gov fee
+end
+
+... **Monthly** ...
+
+== MTA Emissions to Dials ==
+
+group Distribute Gov Fees
+sm -> rr : mUSD gov fees
+end
+
+group Buy Back MTA
+rr -> ops : mUSD over PoS Bridge
+ops -> emusd : mUSD
+emusd -> ops : USDC
+ops -> uni : USDC
+uni -> ops : MTA
+ops -> ec : MTA Purchased
+end
+
+... **Weekly** ...
+
+group Distribute to Dials
+ec -> staker : MTA Purchased\nMTA Emissions
+ec -> pec: MTA Emissions over PoS Bridge
+pec -> vimusd : MTA
+vimusd -> user : MTA
 end
 
 @enduml

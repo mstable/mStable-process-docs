@@ -25,7 +25,7 @@ Token transfers between contracts.
 [tx2uml](https://github.com/naddison36/tx2uml) traces of real transactions.
 
 * [Save Wapper](./traces/README.md)
-* [Staking V2](./stakingV2/README.md)
+* [Staking V2](./stakingv2/README.md)
 
 ## PlantUML
 
