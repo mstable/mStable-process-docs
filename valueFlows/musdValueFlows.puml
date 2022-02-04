@@ -1,0 +1,145 @@
+@startuml
+
+title "Flow of Value for mUSD on Mainnet"
+
+actor "User" as user
+actor "Swapper" as swapper
+participant "Compound" as comp <<Compound>>
+participant "Aave" as aave <<Aave>>
+participant "Compound\nIntegrator" as cint <<mStable>>
+participant "Aave\nIntegrator" as aint <<mStable>>
+participant "Liquidator" as liq <<mStable>>
+participant "Uniswap" as uni <<Uniswap>>
+
+participant "mAsset\n(mUSD)" as musd <<mStable>>
+participant "Savings\nManager" as sm <<mStable>>
+participant "Interest\nBearing\nmAsset\n(imUSD)" as imusd <<mStable>>
+participant "imUSD Vault\n(v-imUSD)" as vimusd <<mStable>>
+participant "Revenue\nRecipient" as rr <<mStable>>
+participant "Emissions\nController" as ec <<mStable>>
+actor "MTA\nStakers" as staker
+
+... **Intraday** ...
+
+group Mint mUSD
+user -> musd : USDC, DAI, USDT and/or sUSD
+
+musd -> cint : USDC
+cint -> comp : USDC
+comp -> cint : cUSDC
+
+musd -> aint : DAI, USDT and/or sUSD
+aint -> aave : DAI, USDT and/or sUSD
+aave -> aint : aDAI, aUSDT and/or aSUSD
+
+musd -> user : mUSD
+end
+
+group Deposit mUSD
+user -> imusd : mUSD
+imusd -> user : imUSD
+end
+
+group Stake imUSD
+user -> vimusd : imUSD
+vimusd -> user : v-imUSD
+end
+
+group Swap
+swapper -> musd : USDC
+musd -> musd : 3bps swap fee\nin mUSD
+musd -> cint : USDC
+cint -> comp : USDC
+comp -> cint : cUSDC
+aint -> aave : aSUSD
+aave -> aint : sUSD
+aint -> musd : sUSD
+musd -> swapper : sUSD
+end
+
+group Redeem mUSD
+user -> musd : mUSD
+musd -> musd : 3bps fee\nin mUSD
+note left: redeem and redeemExactBassets charges a 3bps swap fee.\nredeemMasset charges a 6bps redeem fee.
+aint -> aave : aDAI, aUSDT and/or aSUSD
+aave -> aint : DAI, USDT and/or sUSD
+aint -> musd : DAI, USDT and/or sUSD
+cint -> comp : cUSDC
+comp -> cint : USDC
+cint -> musd : USDC
+musd -> user : USDC, DAI, USDT and/or sUSD
+end
+
+... **Daily** ...
+
+group Collect Interest
+musd -> sm : mUSD swap and\nredeem fees
+sm -> imusd : 90% mUSD
+sm -> sm : 10% mUSD gov fee
+end
+
+group Collect Platform Interest
+comp -> musd : USDC interest
+note left : increased aUSDC\nto USDC exchange rate
+aave -> musd : DAI, USDT and sUSD interest
+note left : increased aToken exchange rates
+' musd -> musd : mint (\nUSDC, DAI, USDT, sUSD)
+musd -> sm : mUSD
+sm -> imusd : 90% mUSD\nstreamed over\n1 day
+sm -> sm : 10% mUSD gov fee
+end
+
+... **Weekly** ...
+
+group Claim COMP
+comp -> cint : COMP rewards
+end
+
+group Liquidate COMP
+cint -> liq : COMP
+liq -> uni : COMP
+uni -> liq : USDC
+liq -> musd : USDC
+' musd -> musd : mint (USDC)
+musd -> liq : mUSD
+liq -> sm : mUSD
+sm -> imusd : 90% mUSD\nstreamed over\n1 week
+sm -> sm : 10% mUSD gov fee
+end
+
+group Revenue Buy Back
+sm -> rr : mUSD gov fee
+rr -> musd : mUSD
+musd -> rr : USDC
+rr -> uni : USDC
+uni -> rr : MTA
+rr -> ec : MTA
+end
+
+group Emissions
+ec -> vimusd : MTA Emissions
+vimusd -> user : MTA
+ec -> staker : MTA Revenue\nMTA Emissions
+end
+
+... **10 Days** ...
+
+group Claim stkAAVE
+aave -> aint : stkAAVE rewards
+end
+
+group Liquidate stkAAVE
+aint -> liq : stkAAVE
+liq -> aave : stkAAVE
+aave -> liq : AAVE
+liq -> uni : AAVE
+uni -> liq : USDC
+liq -> musd : USDC
+' musd -> musd : mint (USDC)
+musd -> liq : mUSD
+liq -> sm : mUSD
+sm -> imusd : 90% mUSD\nstreamed over\n1 week
+sm -> sm : 10% mUSD gov fee
+end
+
+@enduml

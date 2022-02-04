@@ -62,6 +62,10 @@ npx puml generate imusd_vault_bassets.puml -o imusd_vault_bassets.png
 npx puml generate imusd_bassets.puml -o imusd_bassets.png
 npx puml generate imusd_vault_busd.puml -o imusd_vault_busd.png
 npx puml generate imusd_busd.puml -o imusd_busd.png
+
+cd valueFlows
+npx puml generate musdValueFlows.puml -o musdValueFlows.png
+npx puml generate musdPolygonValueFlows.puml -o musdPolygonValueFlows.png
 ```
 
 ### VS Code extension

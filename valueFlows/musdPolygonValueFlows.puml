@@ -1,0 +1,124 @@
+@startuml
+
+title "Flow of Value for mUSD on Polygon"
+
+box Polygon #PowderBlue
+actor "User" as user
+actor "Swapper" as swapper
+participant "Aave" as aave <<Aave>>
+participant "Aave\nIntegrator" as int <<mStable>>
+participant "Liquidator" as liq <<mStable>>
+participant "QuickSwap" as qs <<QuickSwap>>
+
+participant "mAsset\n(mUSD PoS)" as musd <<mStable>>
+participant "Savings\nManager" as sm <<mStable>>
+participant "Interest\nBearing\nmAsset\n(imUSD)" as imusd <<mStable>>
+participant "imUSD Vault\n(v-imUSD)" as vimusd <<mStable>>
+participant "Revenue\nRecipient" as rr <<mStable>>
+participant "Emissions\nController" as pec <<mStable>>
+
+end box
+
+box Mainnet #Aqua
+actor "Operations" as ops
+participant "mAsset\n(mUSD)" as emusd <<mStable>>
+participant "UniSwap" as uni <<UniSwap>>
+participant "Emissions\nController" as ec <<mStable>>
+actor "MTA\nStakers" as staker
+end box
+
+... **Intraday** ...
+
+group Mint mUSD
+user -> musd : USDC, DAI and/or USDT
+musd -> int : USDC, DAI and/or USDT
+int -> aave : USDC, DAI\nand/or USDT
+aave -> int : aUSDC, aDAI\nand/or aUSDT
+musd -> user : mUSD
+end
+
+group Deposit mUSD
+user -> imusd : mUSD
+imusd -> user : imUSD
+end
+
+group Stake imUSD
+user -> vimusd : imUSD
+vimusd -> user : v-imUSD
+end
+
+group Swap
+swapper -> musd : USDC
+musd -> musd : 6bps swap fee\nin mUSD
+musd -> int : USDC
+int -> aave : USDC
+aave -> int : cUSDC
+int -> aave : aSUSD
+aave -> int : sUSD
+int -> musd : sUSD
+musd -> swapper : sUSD
+end
+
+group Redeem mUSD
+user -> musd : mUSD
+musd -> musd : 6bps fee\nin mUSD
+note left: redeem and redeemExactBassets charges a 6bps swap fee.\nredeemMasset charges a 6 bps redeem fee.
+int -> aave : aUSDC, aDAI\nand/or aUSDT
+aave -> int : USDC, DAI\nand/or USDT
+int -> musd : USDC, DAI and/or USDT
+musd -> user : USDC, DAI and/or USDT
+end
+
+... **Daily** ...
+
+group Collect Interest
+musd -> sm : mUSD swap and\nredeem fees
+sm -> imusd : 90% mUSD
+sm -> sm : 10% mUSD gov fee
+end
+
+group Collect Platform Interest
+aave -> musd : USDC, DAI, USDT and sUSD interest
+note left : increased aToken exchange rates
+musd -> sm : mUSD
+sm -> imusd : 90% mUSD\nstreamed over\n1 day
+sm -> sm : 10% mUSD gov fee
+end
+
+... **Weekly** ...
+
+group Revenue Buy Back
+sm -> rr : mUSD gov fee
+rr -> ops : mUSD
+ops -> emusd : mUSD
+emusd -> ops : USDC
+ops -> uni : USDC
+uni -> ops : MTA
+ops -> ec : MTA
+end
+
+group Emissions
+ec -> pec: MTA Emissions
+pec -> vimusd : MTA
+vimusd -> user : MTA
+ec -> staker : MTA Revenue\nMTA Emissions
+end
+
+... **10 Days** ...
+
+group Claim Rewards
+aave -> int : WMATIC rewards
+end
+
+group Liquidate Rewards
+int -> liq : WMATIC
+liq -> qs : WMATIC
+qs -> liq : USDC
+liq -> musd : USDC
+musd -> liq : mUSD
+liq -> sm : mUSD
+sm -> imusd : 90% mUSD\nstreamed over\n1 day
+sm -> sm : 10% mUSD gov fee
+end
+
+@enduml
