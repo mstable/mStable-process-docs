@@ -65,9 +65,9 @@ sm -> mAsset : collectInterest()
 activate mAsset
 note left : collects swap\nand redeem fees
 return
-sm -> mAsset : transferFrom (liquidator,\nsavings manager,\nmAssetsPurchased)
+sm -> mAsset : transferFrom (liquidator,\nSavings Manager,\nmAssetsPurchased)
 activate mAsset
-note left : transfer mAssets\nfrom liquidator\nto savings manager
+note left : transfer mAssets\nfrom liquidator\nto Savings Manager
 return
 sm -> sm : stream (mAsset,\nmAssetsPurchased + leftover,\nduration)
 note left : Stream mAssets to\nSavinngs Contract\nover 7 days.\neg imUSD

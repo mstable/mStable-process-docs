@@ -71,9 +71,9 @@ return
 return
 
 
-liq -> mAsset : approve (saving manager, mAssetsPurchased)
+liq -> mAsset : approve (Savings Manager, mAssetsPurchased)
 activate mAsset
-note left : liquidator approves savings manager\nto transfer mAsset. eg mUSD
+note left : liquidator approves Savings Manager\nto transfer mAsset. eg mUSD
 return
 liq -> sm : depositLiquidation (\nmAsset,\nmAssetsPurchased)
 activate sm
@@ -82,9 +82,9 @@ sm -> mAsset : collectInterest()
 activate mAsset
 note left : collects swap/redeem\nfees from mAsset
 return
-sm -> mAsset : transferFrom (liquidator,\nsavings manager,\nmAssetsPurchased)
+sm -> mAsset : transferFrom (liquidator,\nSavings Manager,\nmAssetsPurchased)
 activate mAsset
-note left : transfer mAssets\nfrom liquidator\nto savings manager
+note left : transfer mAssets\nfrom liquidator\nto Savings Manager
 return
 sm -> sm : stream (mAsset,\nmAssetsPurchased + leftover,\nduration)
 note left : Stream mAssets to\nSavinngs Contract\nover 1 day.\neg imUSD

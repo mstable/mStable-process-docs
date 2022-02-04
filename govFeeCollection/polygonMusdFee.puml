@@ -1,0 +1,93 @@
+@startuml
+
+title "Collect Governance Fees from mUSD on Polygon"
+
+actor "Operations" as op
+participant "Savings\nManager" as sm <<mStable>>
+participant "mAsset\n(mUSD)" as musd <<mStable>>
+participant "Interest\nBearing\nmAsset\n(imUSD)" as imusd <<mStable>>
+participant "Revenue\nForwarder" as rf <<mStable>>
+participant "Platform\nIntegrator" as int <<mStable>>
+participant "Platform" as p <<Aave>>
+participant "USDC (PoS)" as usdc <<Polygon>>
+
+op -> sm : collectAndStreamInterest (\nmUSD)
+activate sm
+sm -> musd : collectInterest ()
+activate musd
+musd -> musd : mint (\nmUSD,\nsurplus fees)
+note left : mint mUSD from \nswap & redeem fees\nto Savings Manager
+return fees collected
+sm -> imusd : depositInterest (savers share)
+activate imusd
+note left : 90% of collected interest to Savers\n10% remains as governance fee
+imusd -> musd : transferFrom (\nmUSD,\nimUSD,\nsavers share)
+note left : transfer mUSD\nfrom Savings Manager\nto imUSD
+activate musd
+return
+return
+sm -> musd : collectPlatformInterest ()
+activate musd
+loop bAssets
+musd -> int : checkBalance (integrator)
+activate int
+int -> p : balanceOf (\nintegrator)
+activate p
+return bAsset balance
+return bAsset balance
+end
+musd -> musd : mint (bAssets[], gains[])
+note left : mint mUSD\nfrom bAsset gains\nto Savings Manager
+return interest collected
+sm -> sm : streamInterest (\nmUSD,\ninterest collected,\none day)
+note left: Stream platform interest\nto imUSD over 1 day.
+
+return
+
+...
+
+op -> sm : distributeUnallocatedInterest (\nmUSD)
+activate sm
+sm -> musd : balanceOf (Savings Manager)
+activate musd
+return Savings Manager's mUSD
+sm -> sm : unallocated ()
+note left: calculate mUSD not streamed
+sm -> musd : approve\n(Revenue Forwarder,\nunalloacted mUSD)
+activate musd
+return
+sm -> rf : notifyRedistributionAmount\n(mUSD,\nunallocated mUSD)
+activate rf
+rf -> musd : transferFrom\n(Savings Manager,\nRevenue Forwarder,\nunallocated mUSD)
+activate musd
+note left: transfer mUSD\nfrom Savings Manager\nto Revenue Forwarder
+return
+return
+return
+
+op -> rf : forward ()
+activate rf
+rf -> musd : balanceOf (Revenue Forwarder)
+activate musd
+return mUSD balance
+rf -> musd : transfer (ops, mUSD balance)
+activate musd
+note left : transfer mUSD\nfrom Revenue Forwarder\nto ops account
+return
+return
+
+op -> musd : redeem (bAsset, mUSD balance, ops account)
+activate musd
+musd -> musd : burn (\nops account,\n mUSD balance)
+musd -> musd : calculateRedeemQty (\nbAsset)
+musd -> usdc : transfer (ops account, bAsset amount)
+activate usdc
+return
+return
+
+op -> usdc : withdraw ()
+activate usdc
+note left : withdraws USDC\nfrom PoS Bridge\nto ops account\non mainnet
+return
+
+@enduml

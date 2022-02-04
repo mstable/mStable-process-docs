@@ -18,7 +18,7 @@ iv -> fp : collectPendingFees ()
 activate fp
 note left: collect 10% of\nswap and redeem fees.
 return
-iv -> fp : balanceOf (inverest validator)
+iv -> fp : balanceOf (interest validator)
 activate fp
 note left: get the amount of\ngov fees collected.
 return gov fees
@@ -27,7 +27,7 @@ iv -> fp : mAsset ()
 activate fp
 note left: get the FP mAsset.\neg mUSD or mBTC
 return mAsset
-iv -> fp : redeem\n(mAsset, gov fees, savings manager)
+iv -> fp : redeem\n(mAsset, gov fees, Savings Manager)
 activate fp
 note left: convert FP liquidity to mAsset\nand transfer to Savings Manager.
 fp -> musd : transfer\n(Savings Manager,\nmAsset amount)
@@ -42,7 +42,7 @@ return
 
 op -> sm : distributeUnallocatedInterest (mAsset)
 activate sm
-sm -> musd : balanceOf (savings manager)
+sm -> musd : balanceOf (Savings Manager)
 activate musd
 return Savings Manager's mAssets
 sm -> sm : unallocated ()
@@ -52,7 +52,7 @@ activate musd
 return
 sm -> rr : notifyRedistributionAmount\n(mAsset,\nunallocated mAssets)
 activate rr
-rr -> musd : transferFrom\n(savings manager,\nrevenue recipient,\nunallocated mAssets)
+rr -> musd : transferFrom\n(Savings Manager,\nrevenue recipient,\nunallocated mAssets)
 activate musd
 note left: transfer mAssets\nfrom Savings Manager\nto Revenue Recipient
 return

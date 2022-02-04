@@ -29,9 +29,9 @@ liq -> usdc : approve (mBTC, infinite amount)
 activate usdc
 note left : liquidator approves mBTC\nto transfer infinite WBTC.
 return
-liq -> mAsset : approve (saving manager, infinite amount)
+liq -> mAsset : approve (Savings Manager, infinite amount)
 activate mAsset
-note left : liquidator approves savings manager\nto transfer infinite mBTC.
+note left : liquidator approves Savings Manager\nto transfer infinite mBTC.
 return
 return
 
@@ -120,9 +120,9 @@ sm -> mAsset : collectInterest()
 activate mAsset
 note left : collects swap\nand redeem fees
 return
-sm -> mAsset : transferFrom (liquidator,\nsavings manager,\nmBTCsPurchased)
+sm -> mAsset : transferFrom (liquidator,\nSavings Manager,\nmBTCsPurchased)
 activate mAsset
-note left : transfer mBTC\nfrom liquidator\nto savings manager
+note left : transfer mBTC\nfrom liquidator\nto Savings Manager
 return
 sm -> sm : stream (mBTC,\nmBTCsPurchased + leftover,\nduration)
 note left : Stream mBTC to\nSavings Contract (imBTC)\nover 7 days.

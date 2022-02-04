@@ -29,9 +29,9 @@ liq -> usdc : approve (mUSD, infinite amount)
 activate usdc
 note left : liquidator approves mUSD\nto transfer infinite USDC.
 return
-liq -> mAsset : approve (saving manager, infinite amount)
+liq -> mAsset : approve (Savings Manager, infinite amount)
 activate mAsset
-note left : liquidator approves savings manager\nto transfer infinite mUSD.
+note left : liquidator approves Savings Manager\nto transfer infinite mUSD.
 return
 return
 
@@ -120,9 +120,9 @@ sm -> mAsset : collectInterest()
 activate mAsset
 note left : collects swap\nand redeem fees
 return
-sm -> mAsset : transferFrom (liquidator,\nsavings manager,\nmUSDsPurchased)
+sm -> mAsset : transferFrom (liquidator,\nSavings Manager,\nmUSDsPurchased)
 activate mAsset
-note left : transfer mUSD\nfrom liquidator\nto savings manager
+note left : transfer mUSD\nfrom liquidator\nto Savings Manager
 return
 sm -> sm : stream (mUSD,\nmUSDsPurchased + leftover,\nduration)
 note left : Stream mUSD to\nSavings Contract (imUSD)\nover 7 days.

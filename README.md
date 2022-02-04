@@ -5,6 +5,7 @@ A repository of PlantUML diagrams that document the various mStable processes.
 ## mStable processes
 * [Distribute Rewards](./distributions/README.md)
 * [Liquidations](./liquidations/README.md)
+* [Governance Fees](./govFeeCollection/README.md)
 * [Integrations](./integrations/README.md)
 * [BuyBack & Make](./buyBack/README.md)
 * [Emissions](./emissions/README.md)
@@ -42,6 +43,10 @@ cd distributions
 npx puml generate distributeRewardsMainnet.puml -o distributeRewardsMainnet.png
 npx puml generate distributeRewardsPolygon.puml -o distributeRewardsPolygon.png
 puml generate distributeRewardsMainnetAlchemix.puml -o distributeRewardsMainnetAlchemix.png
+
+cd govFeeCollection
+npx puml generate mainnetMusdFee.puml -o mainnetMusdFee.png
+npx puml generate polygonMusdFee.puml -o polygonMusdFee.png
 
 cd emissions
 npx puml generate weeklyEmissions.puml -o weeklyEmissions.png

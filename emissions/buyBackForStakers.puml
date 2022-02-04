@@ -15,7 +15,7 @@ actor "User" as user
 
 op -> sm : distributeUnallocatedInterest (mAsset)
 activate sm
-sm -> musd : balanceOf (savings manager)
+sm -> musd : balanceOf (Savings Manager)
 activate musd
 return Savings Manager's mAssets
 sm -> sm : unallocated ()
@@ -25,7 +25,7 @@ activate musd
 return
 sm -> rr : notifyRedistributionAmount\n(mAsset,\nunallocated mAssets)
 activate rr
-rr -> musd : transferFrom\n(savings manager,\nrevenue recipient,\nunallocated mAssets)
+rr -> musd : transferFrom\n(Savings Manager,\nrevenue recipient,\nunallocated mAssets)
 activate musd
 note left: Transfer mAssets\nfrom Savings Manager\nto Revenue Recipient
 return
