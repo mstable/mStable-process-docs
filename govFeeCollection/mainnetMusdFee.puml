@@ -39,7 +39,7 @@ musd -> musd : mint (bAssets[], gains[])
 note left : mint mUSD\nfrom bAsset gains\nto Savings Manager
 return interest collected
 sm -> sm : streamInterest (\nmUSD,\ninterest collected,\none day)
-note left: Stream platform interest\nto imUSD over 1 day.
+note left: Stream platform interest\nto imUSD streamed over 1 day.
 
 return
 

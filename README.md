@@ -2,7 +2,10 @@
 
 A repository of PlantUML diagrams that document the various mStable processes.
 
-## mStable processes
+## mStable Processes
+
+Sequence diagrams of contract calls.
+
 * [Distribute Rewards](./distributions/README.md)
 * [Liquidations](./liquidations/README.md)
 * [Governance Fees](./govFeeCollection/README.md)
@@ -11,9 +14,18 @@ A repository of PlantUML diagrams that document the various mStable processes.
 * [Emissions](./emissions/README.md)
 * [Unwrapper](./unwrapper/README.md)
 
+## Value (Token) Flows
+
+Token transfers between contracts.
+
+* [Token (Value) Flows](./valueFlows/README.md)
+
 ## Transaction Traces
 
-* [SaveWapper](./traces/README.md)
+[tx2uml](https://github.com/naddison36/tx2uml) traces of real transactions.
+
+* [Save Wapper](./traces/README.md)
+* [Staking V2](./stakingV2/README.md)
 
 ## PlantUML
 
