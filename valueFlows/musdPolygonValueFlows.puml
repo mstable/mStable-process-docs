@@ -49,7 +49,7 @@ end
 
 group Swap
 swapper -> musd : USDC
-musd -> musd : 6bps swap fee\nin mUSD
+musd -> musd : 2bps swap fee\nin mUSD
 musd -> int : USDC
 int -> aave : USDC
 aave -> int : cUSDC
@@ -61,8 +61,7 @@ end
 
 group Redeem mUSD
 user -> musd : mUSD
-musd -> musd : 6bps fee\nin mUSD
-note left: redeem and redeemExactBassets charges a 6bps swap fee.\nredeemMasset charges a 6 bps redeem fee.
+musd -> musd : 2bps fee\nin mUSD
 int -> aave : aUSDC, aDAI\nand/or aUSDT
 aave -> int : USDC, DAI\nand/or USDT
 int -> musd : USDC, DAI and/or USDT
@@ -87,20 +86,20 @@ sm -> imusd : 90% mUSD\nstreamed over\n1 day
 sm -> sm : 10% mUSD gov fee
 end
 
-group Claim Platform Rewards
-aave -> int : WMATIC rewards
-end
+' group Claim Platform Rewards
+' aave -> int : WMATIC rewards
+' end
 
-group Liquidate Platform Rewards
-int -> liq : WMATIC
-liq -> qs : WMATIC
-qs -> liq : USDC
-liq -> musd : USDC
-musd -> liq : mUSD
-liq -> sm : mUSD
-sm -> imusd : 90% mUSD\nstreamed over\n1 day
-sm -> sm : 10% mUSD gov fee
-end
+' group Liquidate Platform Rewards
+' int -> liq : WMATIC
+' liq -> qs : WMATIC
+' qs -> liq : USDC
+' liq -> musd : USDC
+' musd -> liq : mUSD
+' liq -> sm : mUSD
+' sm -> imusd : 90% mUSD\nstreamed over\n1 day
+' sm -> sm : 10% mUSD gov fee
+' end
 
 ... **Monthly** ...
 
