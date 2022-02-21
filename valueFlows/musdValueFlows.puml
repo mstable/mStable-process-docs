@@ -47,7 +47,7 @@ end
 
 group Swap
 swapper -> musd : USDC
-musd -> musd : 3bps swap fee\nin mUSD
+musd -> musd : 2bps swap fee\nin mUSD
 musd -> cint : USDC
 cint -> comp : USDC
 comp -> cint : cUSDC
@@ -59,8 +59,7 @@ end
 
 group Redeem mUSD
 user -> musd : mUSD
-musd -> musd : 3bps fee\nin mUSD
-note left: redeem and redeemExactBassets charges a 3bps swap fee.\nredeemMasset charges a 6bps redeem fee.
+musd -> musd : 2bps fee\nin mUSD
 aint -> aave : aDAI, aUSDT and/or aSUSD
 aave -> aint : DAI, USDT and/or sUSD
 aint -> musd : DAI, USDT and/or sUSD
