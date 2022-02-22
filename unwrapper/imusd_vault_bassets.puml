@@ -41,8 +41,8 @@ return
 wrapper -> musd : redeem (\nbAsset,\nmUSD redeemed,\nmin bAsset units,\nbeneficiary)
 activate musd
 note left: redeem mUSD for bAssets
-musd -> musd : burn (\nimUSD,\nmUSD redeemed)
-note left: burn redeemed mUSD in imUSD
+musd -> musd : burn (\nUnwrapper,\nmUSD redeemed)
+note left: burn redeemed mUSD in Unwrapper
 musd -> musd : computeRedeem()
 activate musd 
 note left: calc bAsset units in exchange for redeemed mUSD

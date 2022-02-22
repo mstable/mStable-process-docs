@@ -40,9 +40,9 @@ return
 wrapper -> fp : swap (\nmUSD,\nBUSD,\nredeemed mUSD,\nmin BUSD units,\nbeneficiary)
 activate fp
 note left: swap mUSD for BUSD
-fp -> musd : transferFrom (\nimUSD,\nBUSD Feeder Pool,\nredeemed mUSD)
+fp -> musd : transferFrom (\nUnwrapper,\nBUSD Feeder Pool,\nredeemed mUSD)
 activate musd
-note left: transfer mUSD\nfrom imUSD\nto BUSD Feeder Pool
+note left: transfer mUSD\nfrom Unwrapper\nto BUSD Feeder Pool
 return
 
 fp -> fp : computeSwap()
