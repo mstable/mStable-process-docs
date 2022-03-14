@@ -1,0 +1,116 @@
+@startuml
+
+title "Flow of Value for mUSD in Convex on Mainnet"
+
+actor "mUSD\nStaker" as lps
+actor "CRV\nStaker" as crvs
+actor "CVX\nStaker" as cvxs
+actor "Swapper" as swapper
+actor "Rewards\nHarvester" as h
+participant "mAsset\n(mUSD)" as musd <<mStable>>
+participant "Pool\n(mUSD)" as musdCrv <<Curve>>
+participant "Pool\n(3pool)" as 3pool <<Curve>>
+participant "Curve\nPool\nProxy" as cpp <<Curve>>
+participant "Gauge\n(mUSD)" as musdCrvGauge <<Curve>>
+participant "Vote-escrowed\nCurve\n(veCRV)" as veCRV <<Curve>>
+participant "Curve\nVoter" as crvVoter <<Convex>>
+participant "Booster" as boost <<Convex>>
+participant "CRV\nDepositor" as crvDep <<Convex>>
+participant "Rewards\nPool\n(mUSD)" as crp <<Convex>>
+participant "Rewards\nPool\n(CRV)" as cvxcrvr <<Convex>>
+participant "CVX\nStaking" as cvxsc <<Convex>>
+participant "Rewards\nPool\n(CVX)" as cvxr <<Convex>>
+participant "Vote\nLocked\nCVX\n(vlCVX)" as vlcvx <<Convex>>
+
+group Mint mUSD
+lps -> musd : DAI, USDC, USDT and/or sUSD
+musd -> lps : mUSD
+end
+
+group Deposit mUSD or 3Crv in mUSD Curve Pool
+lps -> musdCrv : mUSD or 3Crv
+musdCrv -> lps : musd3CRV
+end
+
+group Deposit USD in mUSD Curve Pool
+lps -> musdCrv : USDC, USDT and/or DAI
+musdCrv -> 3pool : USDC, USDT\nand/or DAI
+3pool -> musdCrv : 3Crv
+musdCrv -> lps : musd3CRV
+end
+
+group Curve Swap mUSD for USDT
+swapper -> musdCrv : mUSD
+musdCrv ->x 3pool : 3Crv
+3pool -> musdCrv : USDT
+musdCrv -> musdCrv : 4bps swap fee\nin USDT
+note right : 50% to LPs, 50% to CRV stakers
+musdCrv -> swapper : USDT
+end
+
+group Curve fee burning
+musdCrv -> cpp : USDT
+cpp -> 3pool : USDT
+3pool -> cpp : 3CRV
+cpp -> crvs : 3CRV
+note left : veCRV holders
+end
+
+group Stake musdCrv Convex Pool
+lps -> boost : musd3CRV
+boost -> musdCrvGauge : musd3CRV
+musdCrvGauge -> crp : cvxmusd3CRV
+end
+
+group Convert CRV to cvxCRV and stake cvxCRV
+crvs -> crvDep : CRV
+crvDep -> crvDep : cvxCRV
+crvDep -> cvxcrvr : cvxCRV
+end
+
+group Convert CRV to cvxCRV, stake cvxCRV and stake CRV
+crvs -> crvVoter : CRV
+note right : transfer deposited CRV directly to Curve Voter
+crvDep -> crvVoter : CRV
+note left : transfer any CRV in Depositor to Curve Voter
+crvVoter -> veCRV : CRV
+veCRV -> crvVoter : veCRV
+crvDep -> cvxcrvr : cvxCRV
+end
+
+group Lock CVX for 16 weeks
+cvxs -> vlcvx : CVX
+vlcvx -> cvxs : vlCVX
+end
+
+group Claim Locked CVX rewards
+vlcvx -> cvxs : cvxCRV
+end
+
+group Harvest CRV Rewards
+crvVoter -> boost : CRV
+boost -> cvxsc : 1% CRV
+boost -> h : 1% CRV
+boost -> crp : 83% CRV
+crp -> lps : 83% CRV streamed over 1 week
+boost -> cvxcrvr : 10% CRV
+cvxcrvr -> crvs : 10% streamed over 1 week
+boost -> cvxr : 5% CRV
+cvxr -> cvxs : 5% streamed over 1 week
+end
+
+group Distribute
+cvxr -> crvDep : CRV
+crvDep -> cvxr : cvxCRV
+cvxr -> cvxsc : cvxCRV
+
+cvxsc -> crvVoter : CRV
+crvDep -> crvVoter : CRV
+crvVoter -> veCRV : CRV
+veCRV -> crvVoter : veCRV
+crvDep -> cvxsc : cvxCRV
+cvxsc -> h : cvxCRV 0.24%
+cvxsc -> vlcvx : cvxCRV
+end
+
+@enduml

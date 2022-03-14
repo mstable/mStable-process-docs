@@ -60,7 +60,7 @@ musd -> swapper : sUSD
 end
 
 group Redeem mUSD
-user -> musd : mUSD
+user ->x musd : mUSD
 musd -> musd : 2bps fee\nin mUSD
 int -> aave : aUSDC, aDAI\nand/or aUSDT
 aave -> int : USDC, DAI\nand/or USDT
