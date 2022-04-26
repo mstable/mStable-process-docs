@@ -78,7 +78,7 @@ npx puml generate imusd_busd.puml -o imusd_busd.png
 cd valueFlows
 npx puml generate musdValueFlows.puml -o musdValueFlows.png
 npx puml generate musdPolygonValueFlows.puml -o musdPolygonValueFlows.png
-npx puml generate convexFlow.puml -o convexFlow.png
+npx puml generate convexFlows.puml -o convexFlows.png
 ```
 
 ### VS Code extension

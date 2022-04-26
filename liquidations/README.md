@@ -1,7 +1,7 @@
 
 # Liquidation Processes
 
-Processes that liquidate platform rewards like COMP, AAVE and Matic
+These liquidation process are no longer used. COMP and stkAAVE are now sent directly to the mStable Treasury and the Matic rewards on Polygon have ended.
 
 ## COMP from mUSD
 

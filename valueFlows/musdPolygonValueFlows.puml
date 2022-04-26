@@ -25,6 +25,7 @@ participant "mAsset\n(mUSD)" as emusd <<mStable>>
 participant "UniSwap" as uni <<UniSwap>>
 participant "Emissions\nController" as ec <<mStable>>
 actor "MTA\nStakers" as staker
+actor "mStable\nTreasury" as dao
 end box
 
 ... **Intraday** ...
@@ -107,15 +108,23 @@ end
 
 group Distribute Gov Fees
 sm -> rr : mUSD gov fees
+rr -> ops : mUSD over PoS Bridge
 end
 
-group Buy Back MTA
-rr -> ops : mUSD over PoS Bridge
-ops -> emusd : mUSD
+
+group 50% to Treasury
+ops -> dao : 50% mUSD
+end
+
+group 50% Buy Back MTA
+ops -> emusd : 50% mUSD
+note left : redeem mUSD for USDC
 emusd -> ops : USDC
 ops -> uni : USDC
+note left : swap USDC for MTA
 uni -> ops : MTA
 ops -> ec : MTA Purchased
+note left : proportionally donate to MTA and mBPT staking dials
 end
 
 ... **Weekly** ...

@@ -1,5 +1,7 @@
 # BuyBack and Make Processes
 
+This process is not longer used. Revenue is now split 50/50 with treasury and a buy back of MTA for stakers.
+
 ## Feeder Pools
 
 ![Collect Gov Fees - Feeder Pool](./buybackFeederPoolMainnet.png)
