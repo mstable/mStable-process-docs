@@ -108,18 +108,18 @@ end
 
 group Distribute Gov Fees
 sm -> rr : mUSD gov fees
-rr -> ops : mUSD over PoS Bridge
+rr -> musd : mUSD
+note left : redeem mUSD for USDC
+musd -> rr : USDC
+rr -> ops : USDC over PoS Bridge
 end
 
 
 group 50% to Treasury
-ops -> dao : 50% mUSD
+ops -> dao : 50% USDC
 end
 
 group 50% Buy Back MTA
-ops -> emusd : 50% mUSD
-note left : redeem mUSD for USDC
-emusd -> ops : USDC
 ops -> uni : USDC
 note left : swap USDC for MTA
 uni -> ops : MTA
