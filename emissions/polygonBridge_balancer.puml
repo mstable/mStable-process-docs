@@ -13,13 +13,14 @@ end box
 
 participant "PoS Bridge" as b <<Polygon>>
 
-participant "Balancer\nMining\nScript" as bms <<Balancer>>
 
 box "Polygon" #LightBlue
 participant "Child\nChain Manager" as ccm <<Polygon>>
-participant "Disperse\nForwarder" as df <<mStable>>
-participant "Disperse" as d <<Disperse.app>>
+participant "L2 Emissions Controller" as pec <<mStable>>
+participant "Bal Rewards\nForwarder" as df <<mStable>>
 participant "Polygon MTA" as pmta <<Polygon>>
+participant "Streamer" as s <<Balancer>>
+participant "Gauge" as bg <<Balancer>>
 end box
 
 actor Users as user
@@ -36,7 +37,7 @@ note left: transfer MTA\nfrom Emissions Controller\nto Root Recipient
 return
 ec -> bf: notifyRewardAmount(rewards)
 activate bf
-bf -> rcm : depositFor (\nDisperse Forwarder,\nMTA,\namount)
+bf -> rcm : depositFor (\nReward Forwarder,\nMTA,\namount)
 activate rcm
 rcm -> mta : transferFrom (\nRoot Recipient,\nRoot Chain Manager,\namount)
 note right : transfer MTA\nfrom Recipient\nto Bridge
@@ -50,36 +51,40 @@ return
 rcm -> b : StateSynced (\nid\nreceiver,\ndata)
 b -> ccm : onStateReceived (\nid\nreceiver,\ndata)
 activate ccm
-ccm -> pmta : deposit (Disperse Forwarder, amount)
+ccm -> pmta : deposit (Reward Forwarder, amount)
 activate pmta
 pmta -> pmta : mint ()
-note left : mints MTA\nto Disperse Forwarder
+note left : mints MTA\nto Reward Forwarder
 return
 return
 
 ====
 
-ops -> bms : get liquidity report
-activate bms
-note left: get file from GitHub repo
-return json file of pool liquidity providers
-
-ops -> ops : task to proportion rewards (json file)
-
-ops -> df : disperseToken (recipients,[] values[])
+ops -> pec : distributeRewards ([dial ids])
+activate pec
+pec -> pmta: transfer(Root Recipient, rewards)
+activate pmta
+note left: transfer MTA\nfrom Emissions Controller\nto End Recipient
+return
+pec -> df: notifyRewardAmount(rewards)
 activate df
-df -> pmta : approve (Disperse, total rewards)
+df -> pmta : safeTransfer (\nReward Forwarder,\nMTA,\namount)
 activate pmta
+note right : transfer MTA\nfrom Reward Forwarder\nto Streamer
 return
-df -> d : disperseTokenSimple
-activate d
-loop recipients 
-d -> pmta : transferFrom (Disperse Forwarder, recipient, value)
-activate pmta
-note left: Transfer MTA\nfrom Disperse Forwarder\nto each recipient
+df -> s : notify_reward_amount (\nMTA)
+activate s
+note right : Stream rewards to\nGauge
+s -> bg : stream rewards
+activate bg
 return
-end
 return
+return
+
+return
+
+user -> bg : claimed_reward (\naddr,\nMTA)
+activate bg
 return
 
 
