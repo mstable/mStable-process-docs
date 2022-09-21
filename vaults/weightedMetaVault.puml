@@ -1,0 +1,266 @@
+@startuml
+
+title "Weighted Meta Vault with Performance Fee"
+
+actor Owner as owner
+participant "Weighted\nMeta Vault" as mv <<mStable>>
+participant "Asset\nToken" as asset <<3rd Party>>
+participant "Underlying\nVault" as uv <<mStable>>
+
+... mint ...
+
+owner -> mv : mint(\nshares, receiver)
+activate mv
+
+group PerfFeeAbstractVault._previewMint
+
+mv -> mv : read assetsPerShare
+note left : Use assets/share from\nlast performance charge.
+
+mv -> mv : calc assets
+note left : assets = shares * assetsPerShare /\nASSETS_PER_SHARE_SCALE
+
+end
+
+group AbstractVault._transferAndMint
+
+mv -> asset : transferFrom(\nowner,\nmeta vault,\nassets)
+activate asset
+note left: transfer assets\nfrom owner\nto memta vault
+return
+
+end
+
+mv -> mv : _mint(\nreceiver,\nshares)
+
+return
+
+' ... deposit ...
+
+' owner -> mv : deposit(\nassets, receiver)
+' activate mv
+
+' group PerfFeeAbstractVault._previewDeposit
+
+' mv -> mv : read assetsPerShare
+' note left : Use assets/share from\nlast performance charge.
+
+' mv -> mv : calc shares
+' note left : shares = assets * \nASSETS_PER_SHARE_SCALE\n/ assetsPerShare
+
+' end
+
+' group AbstractVault._transferAndMint
+
+' mv -> asset : transferFrom(\nowner,\nmeta vault,\nassets)
+' activate asset
+' note left: transfer assets\nfrom owner\nto memta vault
+' return
+
+' end
+
+' mv -> mv : _mint(\nreceiver,\nshares)
+
+' return
+
+' ... redeem ...
+
+' owner -> mv : redeem(\nshares, receiver, owner)
+' activate mv
+
+' group WeightedMetaPerfFeeVault._redeem
+' group PerfFeeAbstractVault._redeem
+
+' group _previewRedeem
+
+' mv -> mv : calc assets
+' note left : assets = shares *\nprevious assetsPerShare \n/ ASSETS_PER_SHARE_SCALE
+
+' end
+
+' group PerfFeeAbstractVault._sourceAssets
+
+' mv -> asset : balanceOf(\nmeta vault)
+' activate asset
+' note left : assets held in Meta Vault
+' return Meta vault's asset bal
+
+' mv -> mv : cal invested assets
+' note left : assets - assets in meta vault
+
+' group WeightedMetaPerfFeeVault._divest
+
+' mv -> mv : calc shares to redeem\nfor underlying assets
+' note left :  assets *\nASSETS_PER_SHARE_SCALE * 1%\n/ previous assetsPerShare
+
+' group WeightedAbstractVault._beforeWithdrawHook(shares)
+
+' loop underlying vaults
+
+' mv -> uv : balanceOf(meta vault)
+' activate uv
+' note left : shares held by Meta Vault
+' return Meta vault's shares in underlying
+
+' mv -> mv : calc underlying\nshares to redeem
+' note left : shares held by Meta Vault *\nshares / totalShares
+
+' mv -> uv : redeem(underlying shares)
+' activate uv
+' return
+
+' end
+
+' end 
+
+' end
+
+' group WeightedAbstractVault._burnTransfer
+
+' mv -> mv : _burn(\nowner, shares)
+
+' mv -> asset : transfer(meta vault,\nreceiver,\nassets)
+' activate asset
+' note left: transfer assets\nfrom meta vault\nto receiver
+' return
+' end
+' end
+' end
+' end
+' return
+
+' ... withdraw ...
+
+' owner -> mv : withdraw(\nassets, receiver, owner)
+' activate mv
+
+' group WeightedMetaPerfFeeVault._withdraw
+' group PerfFeeAbstractVault._withdraw
+
+' group PerfFeeAbstractVault._sourceAssets
+
+' mv -> asset : balanceOf(\nmeta vault)
+' activate asset
+' note left : assets held in Meta Vault
+' return Meta vault's asset bal
+
+' mv -> mv : cal invested assets
+' note left : assets - assets in meta vault
+
+' group WeightedMetaPerfFeeVault._divest
+
+' mv -> mv : calc shares
+' note left :  assets *\nASSETS_PER_SHARE_SCALE * 1%\n/ previous assetsPerShare
+
+' group WeightedAbstractVault._beforeWithdrawHook(shares)
+
+' loop underlying vaults
+
+' mv -> uv : balanceOf(meta vault)
+' activate uv
+' note left : shares held by Meta Vault
+' return Meta vault's shares in underlying
+
+' mv -> mv : calc underlying shares to redeem
+' note left : shares held by Meta Vault *\nshares / totalShares
+
+' mv -> uv : redeem(underlying shares)
+' activate uv
+' return
+
+' end
+
+' end 
+
+' end
+
+' group PerfFeeAbstractVault._previewWithdraw (assets)
+
+' mv -> mv : calc meta vault shares
+' note left : assets *\nASSETS_PER_SHARE_SCALE\n/ previous assetsPerShare
+
+' end
+
+' group WeightedAbstractVault._burnTransfer
+
+' mv -> mv : _burn(owner, shares)
+
+' mv -> asset : transfer(meta vault,\nreceiver,\nassets)
+' activate asset
+' note left: transfer assets\nfrom meta vault\nto receiver
+' return
+' end
+' end
+' end
+' end
+' return
+
+' ... deposit with volitile asset ...
+
+' owner -> mv : deposit(\nassets, receiver)
+' activate mv
+
+' group PerfFeeAbstractVault._previewDeposit
+
+' group PerfFeeAbstractVault._assetsPerShare(max)
+
+' mv -> mv : load prevAssetsPerShare
+' note left : assets/share from\nlast performance charge
+
+' group SameAssetUnderlyingsAbstractVault.totalAssets
+
+' mv -> asset : balacneOf(\nvault)
+' activate asset
+' note left : Meta vault's asset balance
+' return vault's asset bal
+
+' loop underlying vaults
+
+' mv -> uv : totalSupply()
+' activate uv
+' note left : total shares of underlying
+' return total shares
+
+' mv -> uv : balanceOf(\nmeta vault)
+' activate uv
+' note left : Meta vault's shares\nin underlying
+' return meta vault's shares
+
+' mv -> uv : totalAssets()
+' activate uv
+' note left : total shares of underlying
+' return total assets
+
+' mv -> mv : sum underlying assets
+' note left : meta vault's underlying shares *\nunderlying total assets\n/underlying total shares
+
+' end
+
+' end
+
+' mv -> mv : calc currentAssetsPerShare
+' note left : totalAssets *\nASSETS_PER_SHARE_SCALE\n/ totalShares
+
+' mv -> mx : max(\nprevAssetsPerShare,\ncurrentAssetsPerShare)
+' note left : asset/share is max of\nprev and current
+
+' end
+' mv -> mv : calc shares
+' note left : assets * \nASSETS_PER_SHARE_SCALE\n/ assetsPerShare_
+
+' end
+
+' group AbstractVault._transferAndMint
+
+' mv -> asset : transferFrom(\nowner,\nmeta vault,\nassets)
+' activate asset
+' note left: transfer assets\nfrom owner\nto memta vault
+' return
+
+' end
+
+' mv -> mv : _mint(\nreceiver,\nshares)
+
+' return
+
+@enduml

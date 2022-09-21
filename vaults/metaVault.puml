@@ -1,0 +1,506 @@
+@startuml
+
+title "Meta Vault with Periodic Allocation and Performance Fee"
+
+actor Owner as owner
+' actor "Vault\nManager" as vm
+participant "Meta Vault" as mv <<mStable>>
+participant "Asset\nToken" as asset <<3rd Party>>
+participant "Underlying\nVaults" as uv <<mStable>>
+
+' ... Update assets per share ...
+
+' vm -> mv : updateAssetsPerShare()
+' activate mv
+
+' mv -> mv : totalSupply()
+' note left : meta vault's\ntotal shares
+
+' group _totalAssets()
+
+' mv -> asset : balanceOf(vault)
+' activate asset
+' note left : meta vault\nheld assets
+' return assets in meta vault
+
+' loop underlying vaults
+' mv -> uv : maxWithdraw(meta vault)
+' activate uv
+' return underlying vault assets
+
+' end '  _totalAssets()
+
+' note right of mv : meta vault's total assets =\nmeta vault assets +\nunderlying vault assets
+' end
+
+' note right of mv : store assetsPerShare =\nmeta vault's total assets /\nmeta vault's total shares
+
+' return
+
+' ... Vault manager settle ...
+
+' vm -> mv : settle(settlements[])
+' activate mv
+' loop settlements
+' mv -> uv : deposit(settlement assets)
+' activate uv
+' uv -> asset : transferFrom(\nmeta vault,\nunderlying vault,\nassets)
+' activate asset
+' note left : transfer assets\nfrom meta vault\nto underlying vault
+' return
+' return underlying vault shares
+' end ' loop
+
+' group _updateAssetPerShare()
+
+' mv -> mv : totalSupply()
+' note left : meta vault's\ntotal shares
+
+' group _totalAssets()
+
+' mv -> asset : balanceOf(vault)
+' activate asset
+' note left : meta vault\nheld assets
+' return assets in meta vault
+
+' loop underlying vaults
+' mv -> uv : maxWithdraw(meta vault)
+' activate uv
+' return underlying vault assets
+
+' end ' underlying vaults
+
+' note right of mv : meta vault's total assets =\nmeta vault assets +\nunderlying vault assets
+' end '  _totalAssets()
+
+' note right of mv : store assetsPerShare =\nmeta vault's total assets /\nmeta vault's total shares
+
+' end ' _updateAssetPerShare()
+
+' return
+
+
+' ... totalAssets ...
+
+' owner -> mv : totalAssets()
+' activate mv
+
+' mv -> asset : balanceOf(vault)
+' activate asset
+' return assets in vault
+
+' loop underlying vaults
+' mv -> uv : totalSupply()
+' activate uv
+' return underlying vault total shares
+
+' mv -> uv : balanceOf(vault)
+' activate uv
+' return vault's underlying shares
+
+' mv -> uv : totalAssets()
+' activate uv
+' return underlying vault total assets
+
+' note right of mv : underlying assets =\nunderlying vault total assets *\nvault's underlying shares /\nunderlying vault total shares
+' end
+
+' return assets
+' note right :  assets = vault assets +\nunderlying vault assets
+
+' ... mint ...
+
+' owner -> mv : mint(\nshares, receiver)
+' activate mv
+
+' mv -> mv : _convertToAssets(shares)
+' note left : assets = shares *\nstored assetsPerShare
+
+' group _checkAndUpdateAssetPerShare(assets)
+' alt cumulative transfers > threshold
+
+' group _updateAssetPerShare()
+
+' mv -> mv : totalSupply()
+' note left : vault's total shares
+
+' group _totalAssets()
+
+' mv -> asset : balanceOf(vault)
+' activate asset
+' note left : meta vault\nheld assets
+' return assets in meta vault
+
+' loop underlying vaults
+' mv -> uv : maxWithdraw(meta vault)
+' activate uv
+' return underlying vault assets
+
+' end ' underlying vaults
+
+' note right of mv : meta vault's total assets =\nmeta vault assets +\nunderlying vault assets
+' end '  _totalAssets()
+
+' note right of mv : store assetsPerShare =\nvault's total assets /\nvault's total shares
+
+' end ' _updateAssetPerShare()
+' note right of mv : cumulative transfers reset to zero
+' else cumulative transfers <= threshold
+' note right of mv : cumulative transfers += _assets 
+' end ' alt
+' end ' _checkAndUpdateAssetPerShare
+
+' group _previewMint(shares)
+
+' mv -> mv : _convertToAssets(shares)
+' note left : assets = shares *\nstored assetsPerShare
+
+' end ' _previewMint(shares)
+
+' group _transferAndMint(assets, shares, receiver)
+
+' mv -> asset : transferFrom(\ncaller, vault, assets)
+' activate asset
+' note left : transfer assets\nfrom caller\nto meta vault
+' return
+
+' mv -> mv : _mint(receiver, shares)
+' note left : mint vault shares\nto receiver
+
+' end
+
+' return assets transferred
+
+' ... previewMint ...
+
+' owner -> mv : previewMint(\nshares)
+' activate mv
+
+' mv -> mv : _convertToAssets(shares)
+' note left : assets = shares *\nstored assetsPerShare
+
+' return assets
+
+' ... deposit ...
+
+' owner -> mv : deposit(\nassets, receiver)
+' activate mv
+
+' group _checkAndUpdateAssetPerShare(assets)
+' alt cumulative transfers > threshold
+
+' group _updateAssetPerShare()
+
+' mv -> mv : totalSupply()
+' note left : vault's total shares
+
+' group _totalAssets()
+
+' mv -> asset : balanceOf(vault)
+' activate asset
+' note left : meta vault\nheld assets
+' return assets in meta vault
+
+' loop underlying vaults
+' mv -> uv : maxWithdraw(meta vault)
+' activate uv
+' return underlying vault assets
+
+' end ' underlying vaults
+
+' note right of mv : meta vault's total assets =\nmeta vault assets +\nunderlying vault assets
+' end '  _totalAssets()
+
+' note right of mv : store assetsPerShare =\nvault's total assets /\nvault's total shares
+
+' end ' _updateAssetPerShare()
+' note right of mv : cumulative transfers reset to zero
+' else cumulative transfers <= threshold
+' note right of mv : cumulative transfers += _assets 
+' end ' alt
+' end ' _checkAndUpdateAssetPerShare
+
+' group _previewDeposit(assets)
+
+' mv -> mv : _convertToShares(assets)
+' note left : shares = assets /\nstored assetsPerShare
+
+' end ' _previewDeposit(assets)
+
+' group _transferAndMint(assets, shares, receiver)
+
+' mv -> asset : transferFrom(\ncaller, vault, assets)
+' activate asset
+' note left : transfer assets\nfrom caller\nto meta vault
+' return
+
+' mv -> mv : _mint(receiver, shares)
+' note left : mint vault shares\nto receiver
+
+' end
+
+' return shares minted
+
+' ... previewDeposit...
+
+' owner -> mv : previewDeposit(assets)
+' activate mv
+
+' mv -> mv : _convertToShares(assets)
+' note left : shares = assets /\nstored assetsPerShare
+
+' return shares
+
+' ... withdraw ...
+
+' owner -> mv : withdraw(\nassets, receiver)
+' activate mv
+
+' group _checkAndUpdateAssetPerShare(assets)
+' alt cumulative transfers > threshold
+
+' group _updateAssetPerShare()
+
+' mv -> mv : totalSupply()
+' note left : vault's total shares
+
+' group _totalAssets()
+
+' mv -> asset : balanceOf(vault)
+' activate asset
+' note left : meta vault\nheld assets
+' return assets in meta vault
+
+' loop underlying vaults
+' mv -> uv : maxWithdraw(meta vault)
+' activate uv
+' return underlying vault assets
+
+' end ' underlying vaults
+
+' note right of mv : meta vault's total assets =\nmeta vault assets +\nunderlying vault assets
+' end '  _totalAssets()
+
+' note right of mv : store assetsPerShare =\nvault's total assets /\nvault's total shares
+
+' end ' _updateAssetPerShare()
+' note right of mv : cumulative transfers reset to zero
+' else cumulative transfers <= threshold
+' note right of mv : cumulative transfers += _assets 
+' end ' alt
+' end ' _checkAndUpdateAssetPerShare
+
+' group _previewWithdraw(assets)
+
+' mv -> mv : _convertToShares(assets)
+' note left : shares = assets /\nstored assetsPerShare
+
+' end ' _previewWithdraw(assets)
+
+' group _sourceAssets(assets, shares)
+
+' mv -> asset : balanceOf(vault)
+' activate asset
+' return vault asset balance
+' note left : vault's asset balance
+
+' mv -> mv : totalSupply()
+' note left : vault's total shares
+
+' note right of mv : required assets = assets - vault asset balance
+
+' note right of mv : fraction of shares = shares to be burnt / total shares
+
+' alt  fraction of shares <= single vault threshold
+
+' mv -> uv : maxWithdraw(meta vault)
+' activate uv
+' return assets in underlying vault
+
+' alt required assets <=\n  assets in underlying vault
+' mv -> uv : withdraw(required assets, meta vault)
+' activate uv
+' note left : withdraw asset\nfrom underlying vault\nto meta vault
+' return
+' end ' alt
+' end ' alt
+
+' alt fraction of shares > single vault threshold OR\nnot enough assets in single vault
+
+' loop underlying vaults
+' mv -> uv : maxWithdraw(meta vault)
+' activate uv
+' return assets in underlying vault
+
+' note right of mv : underlying assets across all vaults +=\n  assets in underlying vault
+' end ' loop
+
+' loop underlying vaults
+' note right of mv : asset proportion = required asset *\nmeta vault's underlying assets /\nunderlying assets across all vaults
+
+' mv -> uv : withdraw(asset proportion, meta vault)
+' activate uv
+' note left : withdraw asset\nfrom underlying vault\nto meta vault
+' return 
+' end ' loop
+
+' end ' alt
+
+' end ' _sourceAssets()
+
+
+' group _burnTransfer(assets, shares, receiver, owner)
+
+' mv -> asset : transferFrom(\ncaller, vault, assets)
+
+' mv -> mv : _burn(owner, shares)
+' note left : burn vault shares\nfrom owner
+
+' mv -> asset : transfer(receiver, assets)
+' activate asset
+' note left : transfer assets\nfrom meta vault\nto receiver
+' return
+
+' end ' _burnTransfer
+
+' return shares burnt
+
+' ... previewWithdraw ...
+
+' owner -> mv : previewWithdraw(assets)
+' activate mv
+
+' mv -> mv : _convertToShares(assets)
+' note left : shares = assets /\nstored assetsPerShare
+
+' return shares
+
+
+' ... redeem ...
+
+owner -> mv : redeem(\nshares, receiver)
+activate mv
+
+mv -> mv : _convertToAssets(shares)
+note left : assets = shares *\nstored assetsPerShare
+
+group _checkAndUpdateAssetPerShare(assets)
+alt cumulative transfers > threshold
+
+group _updateAssetPerShare()
+
+mv -> mv : totalSupply()
+note left : vault's total shares
+
+group _totalAssets()
+
+mv -> asset : balanceOf(vault)
+activate asset
+note left : meta vault\nheld assets
+return assets in meta vault
+
+loop underlying vaults
+mv -> uv : maxWithdraw(meta vault)
+activate uv
+return underlying vault assets
+
+end ' underlying vaults
+
+note right of mv : meta vault's total assets =\nmeta vault assets +\nunderlying vault assets
+end '  _totalAssets()
+
+note right of mv : store assetsPerShare =\nvault's total assets /\nvault's total shares
+
+end ' _updateAssetPerShare()
+note right of mv : cumulative transfers reset to zero
+else cumulative transfers <= threshold
+note right of mv : cumulative transfers += _assets 
+end ' alt
+end ' _checkAndUpdateAssetPerShare
+
+group _previewRedeem(shares)
+
+mv -> mv : _convertToAssets(shares)
+note left : assets = shares *\nstored assetsPerShare
+
+end ' _previewRedeem(shares)
+
+group _sourceAssets(assets, shares)
+
+mv -> asset : balanceOf(vault)
+activate asset
+return vault asset balance
+note left : vault's asset balance
+
+mv -> mv : totalSupply()
+note left : vault's total shares
+
+note right of mv : required assets = assets - vault asset balance
+
+note right of mv : fraction of shares = shares to be burnt / total shares
+
+alt  fraction of shares <= single vault threshold
+
+mv -> uv : maxWithdraw(meta vault)
+activate uv
+return assets in underlying vault
+
+alt required assets <=\n  assets in underlying vault
+mv -> uv : withdraw(required assets, meta vault)
+activate uv
+note left : withdraw asset\nfrom underlying vault\nto meta vault
+return
+end ' alt
+end ' alt
+
+alt fraction of shares > single vault threshold OR\nnot enough assets in single vault
+
+loop underlying vaults
+mv -> uv : maxWithdraw(meta vault)
+activate uv
+return assets in underlying vault
+
+note right of mv : underlying assets across all vaults +=\n  assets in underlying vault
+end ' loop
+
+loop underlying vaults
+note right of mv : asset proportion = required asset *\nmeta vault's underlying assets /\nunderlying assets across all vaults
+
+mv -> uv : withdraw(asset proportion, meta vault)
+activate uv
+note left : withdraw asset\nfrom underlying vault\nto meta vault
+return 
+end ' loop
+
+end ' alt
+
+end ' _sourceAssets()
+
+
+group _burnTransfer(assets, shares, receiver, owner)
+
+mv -> asset : transferFrom(\ncaller, vault, assets)
+
+mv -> mv : _burn(owner, shares)
+note left : burn vault shares\nfrom owner
+
+mv -> asset : transfer(receiver, assets)
+activate asset
+note left : transfer assets\nfrom meta vault\nto receiver
+return
+
+end ' _burnTransfer
+
+return assets transferred
+
+' ... previewRedeem ...
+
+' owner -> mv : previewRedeem(shares)
+' activate mv
+
+' mv -> mv : _convertToAssets(shares)
+' note left : assets = shares *\nstored assetsPerShare
+
+' return assets
+
+@enduml
