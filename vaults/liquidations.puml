@@ -1,0 +1,95 @@
+@startuml
+
+title "Liquidation of vault rewards"
+ 
+actor Ops as ops
+participant "Liquidator" as liq <<mStable>>
+participant "Vault" as vault <<mStable>>
+participant "Platform" as pl <<3rd Party>>
+participant "Reward\nToken" as rw <<3rd Party>>
+participant "Purchased\nToken" as token <<3rd Party>>
+participant "Swapper" as sw <<mStable>>
+
+ops -> liq : collectRewards(\nvaults[])
+activate liq
+loop vaults
+liq -> vault : collectRewards()
+activate vault
+vault -> pl : claimRewards()
+note left : collect multiple rewards
+activate pl
+loop rewards
+pl -> rw : transfer(vault, rewards)
+note left : transfer rewards\nfrom platform\nto vault
+activate rw
+return
+end
+return rewards
+return rewardTokens[],\nrewardAmounts[],\npurchaseTokens[]
+loop rewards
+liq -> liq : account(\nvault,\nrewards,\npurchase token)
+note left : record vault's rewards
+liq -> rw : transferFrom(vault, liquidator, rewards)
+note left : transfer rewards\nfrom vault\nto liquidator
+activate rw
+return
+end
+end
+return
+
+... After rewards are collected from multiple vaults ...
+
+ops -> liq : swap(\nreward,\ntoken,\ndata)
+activate liq
+liq -> sw : swap(reward, token, rewards, data)
+activate sw
+sw -> rw : transferFrom(liquidator, swapper, rewards)
+activate rw
+return
+sw -> token : transfer(liquidator, amount)
+activate token
+return
+return token
+return
+
+... Liquidator pushes purchased tokens to vault ...
+
+ops -> liq : donateTokens(\nbatch,\nreward,\ntoken,\nvaults[])
+activate liq
+loop vaults
+liq -> liq : account(\nvault, token, amount)
+note left : get vault's\npurchased tokens
+liq -> token : approve(vault, tokens)
+note left : liquidator approves\nvault to\ntake tokens
+activate token
+return
+liq -> vault : donate(token, amount)
+activate vault
+note left : Tokens are pushed\nto the vault.
+vault -> token : transferFrom(liquidator, vault, amount)
+note left : transfer tokens\nfrom liquidator\nto vault.
+activate token
+return
+note left : Vault decides what\nto do with tokens.
+return
+end
+return
+
+... Vault pulls purchased tokens from liquidator ...
+
+ops -> vault : invest()
+activate vault
+vault -> liq : claimTokens(\nbatch,\nreward,\ntoken\namount)
+activate liq
+liq -> liq : account(\nvault, token, amount)
+note left : get vault's\npurchased tokens
+liq -> token : transfer(vault, amount)
+note left : transfer tokens\nfrom liquidator\nto vault
+activate token
+return
+return tokens
+note right : Vault decides what\nto do with tokens.
+return
+
+
+@enduml

@@ -1,0 +1,214 @@
+@startuml
+
+title "Value Flows of Save+ Vaults"
+
+actor "Shareholder" as sh
+actor "Fee Receiver" as fr
+participant "Liquidator" as l <<mStable>>
+participant "DAI 3Pooler\nMeta Vault\n(3pDAI)" as 3pDAI <<mStable>>
+participant "3Pool\nDAI/USDC/USDT\n(3Crv)" as 3pool <<Curve>>
+participant "3Crv Convex\nMeta Vault\n(mv3CRV)" as mv <<mStable>>
+box mUSD
+participant "3Crv Convex\nmUSD Vault\n(vcx3CRV-mUSD)" as musdbv <<mStable>>
+participant "mUSD\nMetapool\n(musd3CRV)" as musdmp <<Curve>>
+participant "mUSD+3Crv\nPool\n(cvxmusd3CRV)" as cvxmusd <<Convex>>
+participant "musd+3CRV\nGauge" as musdg <<Curve>>
+end box
+box MIM #LightCyan
+participant "3Crv Convex\nFRAX Vault\n(vcx3CRV-FRAX)" as mimbv <<mStable>>
+participant "FRAX+3Crv\nMetapool\n(FRAX3CRV-f)" as mimmp <<Curve>>
+participant "FRAX+3Crv\nPool\n(cvxFRAX3CRV-f)" as cvxmim <<Convex>>
+participant "FRAX+3Crv\nGauge" as mimg <<Curve>>
+end box
+participant "Cowswap" as cs <<Cowswap>>
+
+group #transparent Deposit DAI to 3Pooler
+
+... Shareholder deposits DAI to 3Pooler ...
+
+sh -> 3pDAI : DAI
+activate 3pDAI
+3pDAI -> 3pool : DAI
+activate 3pool
+note left : add DAI liquidity\nto 3Pool\nfor 3Crv LP tokens.
+return 3Crv
+3pDAI -> mv : 3Crv
+activate mv
+note left : 3Crv deposited\nto Meta Vault\nfor Meta Vault LP tokens.
+return mv3CRV
+return 3pDAI
+
+end
+
+group #transparent Deposit 3Crv to Meta Vault
+
+... Shareholder deposits to Meta Vault ...
+
+sh -> mv : 3Crv
+activate mv
+return mv3CRV
+note right : shares minted at\nlast settlement\nassets per share
+
+... Vault Manager Settles Deposits every 5 days ...
+
+mv -> musdbv : 3Crv
+activate mv
+activate musdbv
+note left : deposit 3Crv\nin Convex vault
+musdbv -> musdmp : 3Crv
+activate musdmp
+note left : add 3Crv liquidity\nto Metapool.\nMetapool LP tokens minted.
+return musd3CRV
+musdbv -> cvxmusd : musd3CRV
+activate cvxmusd
+note left : deposit metapool LP\nin Convex pool
+cvxmusd -> musdg : musd3CRV
+note left : Convex deposits\nto Curve Gauge
+' activate musdg
+' return 
+return cvxmusd3CRV
+return vcx3CRV-mUSD
+note right : Convex vault shares\nminted to meta vault
+
+mv -> fr : mv3CRV
+note right : 5% performance fee\ncharged since last settle\nin meta vault shares
+deactivate mv
+
+end
+
+group #transparent Deposit 3Crv to Convex Vault
+
+... Shareholder deposits to 3Crv Convex mUSD Vault ...
+
+sh -> musdbv : 3Crv
+activate musdbv
+musdbv -> musdmp : 3Crv
+activate musdmp
+note left : add 3Crv liquidity\nto Metapool.\nMetapool LP tokens minted.
+return musd3CRV
+musdbv -> cvxmusd : musd3CRV
+activate cvxmusd
+note left : deposit metapool LP\nin Convex pool
+cvxmusd -> musdg : musd3CRV
+note left : Convex deposits\nto Curve Gauge
+' activate musdg
+' return 
+return cvxmusd3CRV
+return vcx3CRV-mUSD
+note right : Convex vault shares\nminted to shareholder
+
+end
+
+...
+
+group #transparent Liquidation of CVX and CRV
+
+... Convex protocol collects CRV rewards ...
+
+musdg -> cvxmusd : CRV
+
+... Liquidator collects vault rewards ...
+
+cvxmusd -> musdbv : CRV and CVX
+activate musdbv
+musdbv -> l : CRV and CVX
+deactivate musdbv
+
+... Liquidator initiates swap of rewards (CRV & CVX) to purchase tokens (DAI or USDC) ...
+
+l -> cs : CRV and CVX
+
+... Liquidator settles swap of rewards (CRV & CVX) to purchase tokens (DAI or USDC) ...
+
+cs -> l : DAI or USDC
+
+... Liquidator donates purchased tokens (DAI or USDC) to vault ...
+
+l -> musdbv : DAI or USDC
+' activate l
+activate musdbv
+musdbv -> musdmp : DAI or USDC
+activate musdmp
+return musd3CRV
+musdbv -> cvxmusd : musd3CRV
+activate cvxmusd
+cvxmusd -> musdg : musd3CRV
+' activate musdg
+' return 
+return cvxmusd3CRV
+
+musdbv -> fr : vcx3CRV-mUSD
+note left : 7% of new shares\nare kept as a fee.
+note right : Shares are minted\nthen burnt over 7 days\nso the assets per share\nare streamed.
+' return
+deactivate musdbv
+
+... Any operation over the next 7 days ...
+
+musdbv -> musdbv : vcx3CRV-mUSD
+note left : Burn streamed shares\nsince the last operation
+
+end
+
+group #transparent Withdraws 3Crv from Meta Vault
+
+sh -> mv : mv3CRV
+activate mv
+note left : shares burnt at\nlast settlement\nassets per share
+mv -> musdbv :  vcx3CRV-mUSD
+activate musdbv
+note left : Convex vault shares\nburnt from meta vault.
+
+musdbv -> cvxmusd : cvxmusd3CRV
+activate cvxmusd
+note left : Withdraw metapool LP\nfrom Convex pool
+musdg -> cvxmusd : musd3CRV
+note left : Convex withdraws\nfrom Curve Gauge
+return musd3CRV
+
+musdbv -> musdmp : musd3CRV
+activate musdmp
+note left : remove 3Crv liquidity\nfrom Metapool.\nMetapool LP tokens burnt.
+return 3Crv
+
+return 3Crv
+return 3Crv
+
+end
+
+group #transparent Vault Manager Rebalances Meta Vault
+
+... Vault Manager specifiers how much underlying shares or assets to withdraw; the underlying vault to withdraw from; and the vault to send to withdrawn assets to ...
+
+mv -> musdbv :  vcx3CRV-mUSD
+activate musdbv
+note left : Withdraw 3Crv\nfrom Convex mUSD Vault
+
+musdbv -> cvxmusd : cvxmusd3CRV
+activate cvxmusd
+musdg -> cvxmusd : musd3CRV
+return musd3CRV
+
+musdbv -> musdmp : musd3CRV
+activate musdmp
+return 3Crv
+return 3Crv
+
+
+mv -> mimbv : 3Crv
+activate mimbv
+note left : Depposit 3Crv\nto Convex FRAX Vault
+mimbv -> mimmp : 3Crv
+activate mimmp
+return FRAX3CRV-f
+mimbv -> cvxmim : FRAX3CRV-f
+activate cvxmim
+cvxmim -> mimg : FRAX3CRV-f
+' activate musdg
+' return 
+return cvxcrvFRAX
+return vcx3CRV-FRAX
+
+end
+
+@enduml

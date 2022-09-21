@@ -1,0 +1,648 @@
+@startuml
+
+title "Convex Vault for Curve 3Crv Metapools"
+ 
+actor Owner as owner
+participant "Convex 3Crv\nBasic Vault" as vault <<mStable>>
+participant "3Crv Metapool\nCalculator\nLibrary" as lib <<mStable>>
+participant "Reward\nPool\n(cvxmusd3CRV)" as rp <<Convex>>
+participant "Metapool\nPool\n(musd3CRV)" as mp <<Curve>>
+' participant "Metapool\nLP Token\n(musd3CRV)" as mpt <<Curve>>
+participant "3Pool\nPool\n(3Crv)" as 3p <<Curve>>
+' participant "3Pool\nLP Token\n(3Crv)" as asset <<Curve>>
+
+' ... Total Assets ...
+
+owner -> vault : totalAssets()
+activate vault
+vault -> rp : balanceOf(\nvault)
+activate rp
+return LP tokens (cvxmusd3CRV)
+note left : Assume Convex LP ==\nCurve Metapool LP token. eg\ncvxmusd3CRV == musd3CRV
+vault -> lib : convertToBaseLp(\nmetapool,\nmetapool LP,\nLP tokens)
+activate lib
+lib -> mp : base_cache_updated()
+activate mp
+return cache timestamp
+alt cached
+note left : cached if\nblock timestamp <=\ncache timestamp +\ncache time
+lib -> mp : base_virtual_price()
+activate mp
+return 3CRV/USD virtual price
+else not cached
+lib -> 3p : get_virtual_price()
+activate 3p
+return 3CRV/USD virtual price
+end
+lib -> mp : get_virtual_price()
+activate mp
+return musd3CRV/USD virtual price
+return 3Crv
+note right : 3Crv =\nmusd3CRV tokens *\nmusd3CRV/USD virtual price /\n3CRV/USD virtual price
+return assets (3Crv)
+
+' ... Preview Deposit ...
+
+' owner -> vault : previewDeposit(\nassets)
+' activate vault
+
+' vault -> lib : calcDeposit(\nmetapool,\nmetapool LP,\nassets (3Crv))
+' activate lib
+
+' lib -> mpt : totalSupply()
+' activate mpt
+' note left : total musd3CRV
+' return total Metapool LP (musd3Crv)
+
+' group _baseVirtualPrice()
+' lib -> mp : base_cache_updated()
+' activate mp
+' return cache timestamp
+' alt cached
+' note left : cached if\nblock timestamp <=\ncache timestamp +\ncache time
+' lib -> mp : base_virtual_price()
+' activate mp
+' return 3CRV/USD virtual price
+' else not cached
+' lib -> 3p : get_virtual_price()
+' activate 3p
+' return 3CRV/USD virtual price
+' end alt
+' end _baseVirtualPrice()
+
+' lib -> mp : balances(0)
+' activate mp
+' note left : mUSD in Metapool
+' return total mUSD in Metapool
+
+' lib -> mp : balances(1)
+' activate mp
+' note left : 3Crv in Metapool
+' return total 3Crv in Metapool
+
+' lib -> mp : A()
+' activate mp
+' note left : Amplitude Coefficient
+' return A
+
+' lib -> lib : _getD
+' note left : Invariant before deposit
+
+' lib -> lib : _getD
+' note left : Invariant after deposit
+
+' lib -> mp : fee()
+' activate mp
+' note left : Metapool fee
+' return fee
+
+' lib -> lib : _getD
+' note left : Invariant after fees
+
+' return Metapool LP (musd3Crv)
+' note right : Metapool LP =\n(total Metapool LP *\n(invariant after fees -\ninvariant before deposit)) /\ninvariant before deposit
+
+' vault -> rp : balanceOf(vault)
+' activate rp
+' note left : vault's bal of\nstaked cvxmusd3CRV
+' return staked cvxmusd3CRV
+
+' vault -> vault : shares =\n_getSharesFromMetapoolTokens(\nmusd3CRV,\nstaked cvxmusd3CRV,\ntotal shares)
+' note left : shares =\ncvxmusd3CRV from deposit *\ntotal shares /\nstaked cvxmusd3CRV
+
+' return shares
+
+' ... Deposit ...
+
+' owner -> vault : deposit(\nassets,\nreceiver)
+' activate vault
+' note left : Deposit\nassets\n(3Crv)
+
+' vault -> asset : transferFrom(\nsender,\nvault,\nassets)
+' activate asset
+' note left: transfer 3Crv\nfrom sender\nto vault
+' return
+
+' vault -> rp : balanceOf(vault)
+' activate rp
+' note left : vault's bal of\nstaked cvxmusd3CRV
+' return cvxmusd3CRV bal before deposit
+
+' group _getMetapoolTokensForAssets (assets)
+' vault -> 3p : get_virtual_price()
+' activate 3p
+' note left : 3Crv/USD virtual price
+' return 3CRV/USD price
+' vault -> mp : get_virtual_price()
+' activate mp
+' note left : musd3CRV/USD virtual price
+' return musd3CRV/USD virtual price
+' vault -> vault : fair Metapool LPs (musd3CRV) =\n3CRV *\n3CRV/USD virtual price /\nmusd3CRV/USD virtual price
+' end
+
+' vault -> vault : min Metapool LPs (musd3CRV) =\nfair Metapool LPs (musd3CRV)\n* (1 - slippage)
+
+' group _depositAndStake
+' vault -> mp : add_liquidity([0, 3CRV], min Metapool LPs (musd3CRV))
+' note left : deposit 3CRV\nin Curve Metapool
+' activate mp
+' return Metapool LP (musd3CRV)
+
+' vault -> rp : deposit(Metapool LP (musd3CRV))
+' activate rp
+' note left : Deposit and stake\nMetapool LP (musd3CRV)\nin Convex pool.
+' return
+' end
+
+' vault -> vault : _getSharesFromMetapoolTokens(\nmusd3CRV,\ntotal cvxmusd3CRV,\ntotal shares)
+' note left : shares =\ncvxmusd3CRV from deposit *\ntotal shares before /\nstaked cvxmusd3CRV before
+
+' vault -> vault : mint(recevier, shares)
+' note left : Mint vault shares
+
+' return shares
+
+' ... Mint ...
+
+' owner -> vault : mint(\nshares,\nreceiver)
+' activate vault
+' note left : Mint\nvault\nshares
+
+' group Calculate required Metapool LP tokens (musd3CRV)
+' vault -> rp : balanceOf(vault)
+' activate rp
+' note left : vault's bal of\nstaked cvxmusd3CRV
+' return cvxmusd3CRV bal before mint
+
+' vault -> vault : _getMetapoolTokensFromShares(\nshares,\nstaked cvxmusd3CRV,\ntotal shares)
+' note left : required musd3CRV =\nshares *\nstaked cvxmusd3CRV /\ntotal shares
+' end
+
+' vault -> lib : calcMint(\nmetapool,\nmetapool LP,\nrequired Metapool LPs)
+' activate lib
+
+' lib -> mpt : totalSupply()
+' activate mpt
+' note left : total musd3CRV
+' return total Metapool LP (musd3Crv)
+
+' group _baseVirtualPrice()
+' lib -> mp : base_cache_updated()
+' activate mp
+' return cache timestamp
+' alt cached
+' note left : cached if\nblock timestamp <=\ncache timestamp +\ncache time
+' lib -> mp : base_virtual_price()
+' activate mp
+' return 3CRV/USD virtual price
+' else not cached
+' lib -> 3p : get_virtual_price()
+' activate 3p
+' return 3CRV/USD virtual price
+' end alt
+' end _baseVirtualPrice()
+
+' lib -> mp : balances(0)
+' activate mp
+' note left : mUSD in Metapool
+' return total mUSD in Metapool
+
+' lib -> mp : balances(1)
+' activate mp
+' note left : 3Crv in Metapool
+' return total 3Crv in Metapool
+
+' lib -> mp : A()
+' activate mp
+' note left : Amplitude Coefficient
+' return A
+
+' lib -> lib : _getD
+' note left : Invariant before deposit
+
+' lib -> lib : required invariant =\ninvariant before mint +\n((required metapool LPs *\ninvariant) /\ntotal Metapool LP)
+
+' lib -> lib : _getY
+' note left : Required 3Crv bal\nfor required invariant
+
+' lib -> mp : fee()
+' activate mp
+' note left : Metapool fee
+' return fee
+
+' lib -> lib : _getY
+' note left : Required 3Crv bal after fees\nfor required invariant
+
+' lib -> lib : required 3Crv =\nRequired 3Crv bal -\n3Crv bal
+
+' lib -> lib : assets =\nRequired 3Crv *\n0.0000002
+' note left : round up by\n0.002 basis points
+
+' return assets (3Crv),\nMetapool USD value,\ntotal Metapool LPs (musd3Crv),\n3Crv/USD virtual price
+
+' group Sandwich protection using virtual prices
+' vault -> vault : fair assets (3Crv) =\n(required Metapool LPs (musd3CRV) *\nMetapool USD value) /\n(total Metapool LPs (musd3CRV) *\n3Crv/USD virtual price)
+' vault -> vault : max assets (3Crv) =\nfair assets (3Crv) * (1 + slippage)
+' vault -> vault : require(\nassets <= max assets)
+' end
+
+' vault -> asset : transferFrom(sender, vault, assets)
+' activate asset
+' note left: transfer 3Crv\nfrom sender\nto vault
+' return
+
+' group _depositAndStake
+' vault -> mp : add_liquidity([0, 3CRV], required Metapool LPs (musd3CRV))
+' note left : deposit 3CRV\nin Curve Metapool
+' activate mp
+' return musd3CRV
+
+' vault -> rp : deposit(required Metapool LPs (musd3CRV))
+' activate rp
+' note left : Deposit and stake\nmusd3CRV in Convex pool.
+' return
+' end
+
+' vault -> vault : mint(recevier, shares)
+' note left : Mint vault shares
+
+' return assets (3CRV)
+
+' ... Preiview Mint ...
+
+' owner -> vault : previewMint(\nshares)
+' activate vault
+
+' group Calculate required Metapool LP tokens (musd3CRV)
+' vault -> rp : balanceOf(vault)
+' activate rp
+' note left : vault's bal of\nstaked cvxmusd3CRV
+' return cvxmusd3CRV bal before mint
+
+' vault -> vault : _getMetapoolTokensFromShares(\nshares,\nstaked cvxmusd3CRV,\ntotal shares)
+' note left : required musd3CRV =\nshares *\nstaked cvxmusd3CRV /\ntotal shares
+' end
+
+' vault -> lib : calcMint(\nmetapool,\nmetapool LP,\nrequired Metapool LPs)
+' activate lib
+
+' lib -> mpt : totalSupply()
+' activate mpt
+' note left : total musd3CRV
+' return total Metapool LP (musd3Crv)
+
+' group _baseVirtualPrice()
+' lib -> mp : base_cache_updated()
+' activate mp
+' return cache timestamp
+' alt cached
+' note left : cached if\nblock timestamp <=\ncache timestamp +\ncache time
+' lib -> mp : base_virtual_price()
+' activate mp
+' return 3CRV/USD virtual price
+' else not cached
+' lib -> 3p : get_virtual_price()
+' activate 3p
+' return 3CRV/USD virtual price
+' end alt
+' end _baseVirtualPrice()
+
+' lib -> mp : balances(0)
+' activate mp
+' note left : mUSD in Metapool
+' return total mUSD in Metapool
+
+' lib -> mp : balances(1)
+' activate mp
+' note left : 3Crv in Metapool
+' return total 3Crv in Metapool
+
+' lib -> mp : A()
+' activate mp
+' note left : Amplitude Coefficient
+' return A
+
+' lib -> lib : _getD
+' note left : Invariant before deposit
+
+' lib -> lib : required invariant =\ninvariant before mint +\n((required metapool LPs *\ninvariant) /\ntotal Metapool LP)
+
+' lib -> lib : _getY
+' note left : Required 3Crv bal\nfor required invariant
+
+' lib -> mp : fee()
+' activate mp
+' note left : Metapool fee
+' return fee
+
+' lib -> lib : _getY
+' note left : Required 3Crv bal after fees\nfor required invariant
+
+' lib -> lib : required 3Crv =\nRequired 3Crv bal -\n3Crv bal
+
+' lib -> lib : assets =\nRequired 3Crv *\n0.0000002
+' note left : round up by\n0.002 basis points
+
+' return assets (3Crv),\nMetapool USD value,\ntotal Metapool LPs (musd3Crv),\n3Crv/USD virtual price
+
+' return assets (3CRV)
+
+' ... Preview Redeem ...
+
+' owner -> vault : previewRedeem(\nshares)
+' activate vault
+
+' group Calculate required Metapool LP tokens (musd3CRV)
+' vault -> rp : balanceOf(vault)
+' activate rp
+' note left : vault's bal of\nstaked cvxmusd3CRV
+' return cvxmusd3CRV bal before mint
+
+' vault -> vault : _getMetapoolTokensFromShares(\nshares,\nstaked cvxmusd3CRV,\ntotal shares)
+' note left : required musd3CRV =\nshares *\nstaked cvxmusd3CRV /\ntotal shares
+' end
+
+' vault -> lib : calcRedeem(\nmetapool,\nmetapool LP,\nrequired Metapool LPs)
+' activate lib
+
+' lib -> mpt : totalSupply()
+' activate mpt
+' note left : total musd3CRV
+' return total Metapool LP (musd3Crv)
+
+' group _baseVirtualPrice()
+' lib -> mp : base_cache_updated()
+' activate mp
+' return cache timestamp
+' alt cached
+' note left : cached if\nblock timestamp <=\ncache timestamp +\ncache time
+' lib -> mp : base_virtual_price()
+' activate mp
+' return 3CRV/USD virtual price
+' else not cached
+' lib -> 3p : get_virtual_price()
+' activate 3p
+' return 3CRV/USD virtual price
+' end alt
+' end _baseVirtualPrice()
+
+' lib -> mp : balances(0)
+' activate mp
+' note left : mUSD in Metapool
+' return total mUSD in Metapool
+
+' lib -> mp : balances(1)
+' activate mp
+' note left : 3Crv in Metapool
+' return total 3Crv in Metapool
+
+' lib -> mp : A()
+' activate mp
+' note left : Amplitude Coefficient
+' return A
+
+' lib -> lib : _getD
+' note left : Invariant before deposit
+
+' lib -> lib : required invariant =\ninvariant before redeem -\n((required metapool LPs *\ninvariant) /\ntotal Metapool LP)
+
+' lib -> lib : _getY
+' note left : Required 3Crv bal\nfor required invariant
+
+' lib -> mp : fee()
+' activate mp
+' note left : Metapool fee
+' return fee
+
+' lib -> lib : _getY
+' note left : Required 3Crv bal after fees\nfor required invariant
+
+' lib -> lib : required 3Crv =\n3Crv bal -\nRequired 3Crv bal
+
+' return assets (3Crv),\nMetapool USD value,\ntotal Metapool LPs (musd3Crv),\n3Crv/USD virtual price
+
+' return assets (3CRV)
+
+' ... Redeem shares ...
+
+' owner -> vault : redeem(\nshares,\nreceiver,\nowner)
+' activate vault
+
+' group Calculate required Metapool LP tokens (musd3CRV)
+' vault -> rp : balanceOf(vault)
+' activate rp
+' note left : vault's bal of\nstaked cvxmusd3CRV
+' return cvxmusd3CRV bal
+
+' vault -> vault : _getMetapoolTokensFromShares
+' note left : required musd3CRV =\nshares *\ntotal cvxmusd3CRV /\ntotal shares
+' end 
+
+' group _getAssetsForMetapoolTokens(required musd3CRV)
+' vault -> 3p : get_virtual_price()
+' note left : 3Crv/USD virtual price
+' activate 3p
+' return 3CRV/USD virtual price
+' vault -> mp : get_virtual_price()
+' activate mp
+' note left : musd3Crv/USD virtual price
+' return musd3CRV/USD virtual price
+
+' vault -> vault : fair assets (3CRV) =\nmusd3CRV *\nmusd3CRV/USD virtual price /\n3CRV/USD virtual price
+' end ' _getAssetsForMetapoolTokens
+
+' vault -> vault : min assets (3Crv) =\nfair assets (3CRV) * (1 - slippage)
+
+' group _withdrawAndUnwrap
+' vault -> rp : withdrawAndUnwrap(\nrequired musd3CRV, false)
+' activate rp
+' note left : Unstake cvxmusd3CRV,\nunwrap cvxmusd3CRV\nfor musd3CRV\nand don't claim rewards.
+' return
+
+' vault -> mp : remove_liquidity_one_coin(\nrequired musd3CRV, 1, min assets (3Crv))
+' activate mp
+' note left : Withdraw 3Crv\nfrom Metapool
+' return
+' end
+
+' vault -> vault : burn(owner, shares)
+' note left : Burn vault shares\nfrom owner
+
+' vault -> asset : transfer(receiver, assets)
+' activate asset
+' note left: transfer 3Crv\nfrom vault\nto receiver
+' return
+
+' return assets (3CRV)
+
+' ' ... Preview Withdraw ...
+
+' owner -> vault : previewWithdraw(\nassets)
+' activate vault
+
+' vault -> lib : calcWithdraw(\nmetapool,\nmetapool LP,\nassets (3Crv))
+' activate lib
+
+' lib -> mpt : totalSupply()
+' activate mpt
+' note left : total musd3CRV
+' return total Metapool LP (musd3Crv)
+
+' group _baseVirtualPrice()
+' lib -> mp : base_cache_updated()
+' activate mp
+' return cache timestamp
+' alt cached
+' note left : cached if\nblock timestamp <=\ncache timestamp +\ncache time
+' lib -> mp : base_virtual_price()
+' activate mp
+' return 3CRV/USD virtual price
+' else not cached
+' lib -> 3p : get_virtual_price()
+' activate 3p
+' return 3CRV/USD virtual price
+' end alt
+' end _baseVirtualPrice()
+
+' lib -> mp : balances(0)
+' activate mp
+' note left : mUSD in Metapool
+' return total mUSD in Metapool
+
+' lib -> mp : balances(1)
+' activate mp
+' note left : 3Crv in Metapool
+' return total 3Crv in Metapool
+
+' lib -> mp : A()
+' activate mp
+' note left : Amplitude Coefficient
+' return A
+
+' lib -> lib : _getD
+' note left : Invariant before withdraw
+
+' lib -> lib : _getD
+' note left : Invariant after withdraw
+
+' lib -> mp : fee()
+' activate mp
+' note left : Metapool fee
+' return fee
+
+' lib -> lib : _getD
+' note left : Invariant after fees
+
+' return required Metapool LP (musd3Crv),\nMetapool USD value,\ntotal Metapool LPs (musd3Crv),\n3Crv/USD virtual price
+' note right : required Metapool LP =\n(total Metapool LPs *\n(invariant before withdraw -\ninvariant after fees)) /\ninvariant before withdraw
+
+' vault -> rp : balanceOf(vault)
+' activate rp
+' note left : vault's bal of\nstaked cvxmusd3CRV
+' return cvxmusd3CRV bal
+
+' vault -> vault : shares =\n_getSharesFromMetapoolTokens(\nmusd3CRV,\nstaked cvxmusd3CRV,\ntotal shares)
+' note left : shares =\nmusd3Crv *\ntotal shares /\nstaked cvxmusd3CRV
+
+' return shares
+
+' ... Withdraw assets ...
+
+' owner -> vault : withdraw(\nassets,\nreceiver,\nowner)
+' activate vault
+
+' ' TODO allowance
+
+' vault -> lib : calcWithdraw(\nmetapool,\nmetapool LP,\nassets (3Crv))
+' activate lib
+
+' lib -> mpt : totalSupply()
+' activate mpt
+' note left : total musd3CRV
+' return total Metapool LP (musd3Crv)
+
+' group _baseVirtualPrice()
+' lib -> mp : base_cache_updated()
+' activate mp
+' return cache timestamp
+' alt cached
+' note left : cached if\nblock timestamp <=\ncache timestamp +\ncache time
+' lib -> mp : base_virtual_price()
+' activate mp
+' return 3CRV/USD virtual price
+' else not cached
+' lib -> 3p : get_virtual_price()
+' activate 3p
+' return 3CRV/USD virtual price
+' end alt
+' end _baseVirtualPrice()
+
+' lib -> mp : balances(0)
+' activate mp
+' note left : mUSD in Metapool
+' return total mUSD in Metapool
+
+' lib -> mp : balances(1)
+' activate mp
+' note left : 3Crv in Metapool
+' return total 3Crv in Metapool
+
+' lib -> mp : A()
+' activate mp
+' note left : Amplitude Coefficient
+' return A
+
+' lib -> lib : _getD
+' note left : Invariant before withdraw
+
+' lib -> lib : _getD
+' note left : Invariant after withdraw
+
+' lib -> mp : fee()
+' activate mp
+' note left : Metapool fee
+' return fee
+
+' lib -> lib : _getD
+' note left : Invariant after fees
+
+' return required Metapool LP (musd3Crv),\nMetapool USD value,\ntotal Metapool LPs (musd3Crv),\n3Crv/USD virtual price
+' note right : required Metapool LP =\n(total Metapool LPs *\n(invariant before withdraw -\ninvariant after fees)) /\ninvariant before withdraw
+
+' group Sandwich protection using virtual prices
+' vault -> vault : fair Metapool LPs (musd3Crv) =\n(assets (3CRV) *\n3Crv/USD virtual price *\ntotal Metapool LPs (musd3Crv)) /\n(Metapool USD value)
+' vault -> vault : max Metapool LPs (musd3CRV) =\nfair Metapool LPs (musd3Crv) *\n(1 + slippage)
+' vault -> vault : require(\nrequired Metapool LPs <=\nmax Metapool LPs (musd3CRV))
+' end
+
+' vault -> rp : balanceOf(vault)
+' activate rp
+' note left : vault's bal of\nstaked cvxmusd3CRV
+' return cvxmusd3CRV bal
+
+' vault -> vault : _getSharesFromMetapoolTokens(\nmusd3CRV,\nstaked cvxmusd3CRV,\ntotal shares)
+' note left : shares =\nmusd3Crv *\ntotal shares /\nstaked cvxmusd3CRV
+
+' group _withdrawAndUnwrap
+' vault -> rp : withdrawAndUnwrap(\nrequired Metapool LP (musd3Crv), false)
+' activate rp
+' note left : Unstake cvxmusd3CRV,\nunwrap cvxmusd3CRV\nfor musd3CRV\nand don't claim rewards.
+' return
+
+' vault -> mp : remove_liquidity_imbalance(\n[0, assets (3Crv)],\nrequired Metapool LP (musd3Crv))
+' activate mp
+' note left : Withdraw 3Crv\nfrom Metapool
+' return
+' end
+
+' vault -> vault : burn(\nowner,\nshares)
+' note left : Burn vault shares\nfrom owner
+
+' vault -> asset : transfer(\receiver,\nassets)
+' activate asset
+' note left: transfer 3Crv\nfrom vault\nto receiver
+' return
+
+' return shares
+
+@enduml

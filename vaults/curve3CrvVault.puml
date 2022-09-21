@@ -1,0 +1,652 @@
+@startuml
+
+title "Stablecoin Meta Vault"
+
+actor Owner as owner
+participant "Stablecoin\nVault" as sv <<mStable>>
+participant "3Pool\nCalculator\nLibrary" as lib <<mStable>>
+participant "3Pool" as 3p <<Curve>>
+participant "3Pool\nLP Token\n(3Crv)" as 3pt <<Curve>>
+participant "Convex 3Crv\nMeta Vault" as mv <<mStable>>
+participant "Dai Stablecoin\n(DAI)" as dai <<Maker>>
+
+... totalAssets ...
+
+owner -> sv : totalAssets()
+activate sv
+sv -> mv : balanceOf(stablecoin vault)
+activate mv
+note left : Meta Vault shares\nheld by Stablecoin Vault
+return Meta vault shares
+sv -> mv : convertToAssets(\nmeta vault shares)
+activate mv
+note left : Stablecoin Vault's\n3Crv in Meta Vault
+return Meta Vault 3Crv value
+
+group _getAssetsForThreeCrvTokens
+
+sv -> lib : calcRedeem(One 3Crv)
+activate lib
+
+lib -> 3pt : totalSupply()
+activate 3pt
+note left : total 3Pool\nLP tokens
+return total 3Crv
+
+lib -> 3p : get_virtual_price()
+activate 3p
+return 3Crv/USD virtual price
+
+lib -> 3p : balances(0)
+activate 3p
+note left : DAI in 3Pool
+return total DAI
+
+lib -> 3p : balances(1)
+activate 3p
+note left : USDC in 3Pool
+return total USDC
+
+lib -> 3p : balances(2)
+activate 3p
+note left : USDT in 3Pool
+return total USDT
+
+lib -> 3p : A()
+activate 3p
+note left : Amplitude Coefficient
+return A
+
+lib -> lib : _getD
+note left : Invariant before deposit
+
+lib -> lib : required invariant =\ninvariant before redeem -\n((One 3Crv *\ninvariant before redeem) /\ntotal 3Crv)
+
+lib -> lib : _getY
+note left : required DAI bal\nfor required invariant
+
+lib -> 3p : fee()
+activate 3p
+note left : 3Pool fee
+return fee
+
+lib -> lib : _getY
+note left : required DAI bal after fees\nfor required invariant
+
+lib -> lib : DAI =\nDAI bal -\nrequired DAI bal after fees\n-1
+
+return DAI/3Crv
+
+sv -> sv : DAI =\nMeta Vault 3Crv value *\nDAI/3Crv;
+
+end
+
+return assets (DAI)
+
+... Deposit ...
+
+owner -> sv : deposit(\nassets,\nreceiver)
+activate sv
+note left : deposit\nassets\n(DAI)
+
+sv -> dai : transferFrom(\nsender,\nstablecoin vault,\nassets)
+activate dai
+note left: transfer DAI\nfrom sender\nto stablecoin vault
+return
+
+sv -> mv : balanceOf(stablecoin vault)
+activate mv
+note left : stablecoin vault's bal\nof meta vault shares
+return meta vault shares before deposit
+
+group _getThreeCrvTokensForAssets (assets)
+sv -> lib : geVirtualPrice()
+activate lib
+
+lib -> 3p : balances(0)
+activate 3p
+note left : DAI in 3Pool
+return total DAI in 3Pool
+
+lib -> 3p : balances(1)
+activate 3p
+note left : USDC in 3Pool
+return total USDC in 3Pool
+
+lib -> 3p : balances(2)
+activate 3p
+note left : USDT in 3Pool
+return total USDT in 3Pool
+
+lib -> 3p : A()
+activate 3p
+note left : Amplitude Coefficient
+return A
+
+lib -> 3pt : totalSupply()
+activate 3pt
+note left : total 3Pool LP tokens
+return total 3Crv
+
+lib -> lib : _getD
+note left : USD value before deposit
+
+lib -> lib : virtual 3Crv/USD price =\nUSD value before deposit /\ntotal 3Crv)
+
+return 3Crv/USD price
+
+sv -> sv : fair 3Pool LPs (3Crv) =\nassets (DAI) /\n3Crv/USD virtual price
+end
+
+sv -> sv : min 3Pool LPs (3Crv) =\nfair 3Pool LPs (3Crv)\n* (1 - slippage)
+
+group _depositAndStake(assets, min 3Crv)
+sv -> 3p : add_liquidity([0, DAI], min 3Crv)
+note left : deposit DAI\nin Curve 3Pool
+activate 3p
+return
+
+sv -> 3pt : balanceOf(stablecoin vault)
+activate 3pt
+return stablecoin vault's bal of 3Pool LP (3Crv)
+
+sv -> mv : deposit(3Crv, stablecoin vault)
+activate mv
+note left : deposit 3Crv\nin Meta Vault
+return meta vault shares
+end
+
+sv -> sv : stablecoin vault shares =\nmeta vault shares from deposit *\ntotal meta vault shares before /\ntotal stablecoin shares
+
+sv -> sv : _mint(\nrecevier,\nstablecoin vautl shares)
+note left : mint stablecoin\nvault shares
+
+return stablecoin\nvault\nshares
+
+... previewDeposit ...
+
+owner -> sv : previewDeposit(\nassets (DAI),\nreceiver)
+activate sv
+
+sv -> lib : calcDeposit(assets\nDAI 3Pool index)
+activate lib
+
+lib -> 3pt : totalSupply()
+activate 3pt
+note left : total 3Crv
+return total 3Pool LP (3Crv)
+
+lib -> 3p : balances(0)
+activate 3p
+note left : DAI in 3Pool
+return total DAI in 3Pool
+
+lib -> 3p : balances(1)
+activate 3p
+note left : USDC in 3Pool
+return total USDC in 3Pool
+
+lib -> 3p : balances(2)
+activate 3p
+note left : USDT in 3Pool
+return total USDT in 3Pool
+
+lib -> 3p : A()
+activate 3p
+note left : Amplitude Coefficient
+return A
+
+lib -> lib : _getD
+note left : Invariant before deposit
+
+lib -> lib : _getD
+note left : Invariant after deposit
+
+lib -> 3p : fee()
+activate 3p
+note left : 3Pool fee
+return fee
+
+lib -> lib : _getD
+note left : Invariant after fees
+
+return 3Pool LP (3Crv)
+note right : 3Pool LP =\n(total 3Pool LP *\n(invariant after fees -\ninvariant before deposit)) /\ninvariant before deposit
+
+sv -> mv : previewDeposit(3Crv)
+activate mv
+note left : convert 3Pool LP tokens (3Crv)\nto Meta Vault shares
+return meta vault shares
+
+sv -> sv : stablecoin shares =\n(meta vault shares *\ntotal stablecoin shares) /\ntotal meta vault shares
+
+return stablecoin shares
+
+... Mint ...
+
+owner -> sv : mint(\nstablecoin shares,\nreceiver)
+activate sv
+note left : mint\nvault\nshares
+
+sv -> mv : balanceOf(stablecoin vault)
+activate mv
+note left : stablecoin vault's bal\nof meta vault shares
+return meta vault shares
+
+sv -> sv : _getMetaVaultSharesFromShares(\nstablecoin shares,\nmeta vault shares,\ntotal stablecoin shares)
+note right : required meta vault shares =\nrequired stablecoin shares *\nmeta vault shares /\ntotal stablecoin shares
+
+sv -> mv : previewMint(\nrequired meta vault shares)
+activate mv
+note left : convert Meta Vault shares\nto 3Pool LP tokens (3Crv)
+return required 3Pool LPs (3Crv)
+
+sv -> lib : calcMint(\nrequired 3Crv,\nDAI 3Pool index)
+activate lib
+
+lib -> 3pt : totalSupply()
+activate 3pt
+note left : total 3Crv
+return total 3Pool LP (3Crv)
+
+lib -> 3p : balances(0)
+activate 3p
+note left : DAI in 3Pool
+return total DAI in 3Pool
+
+lib -> 3p : balances(1)
+activate 3p
+note left : USDC in 3Pool
+return total USDC in 3Pool
+
+lib -> 3p : balances(2)
+activate 3p
+note left : USDT in 3Pool
+return total USDT in 3Pool
+
+lib -> 3p : A()
+activate 3p
+note left : Amplitude Coefficient
+return A
+
+lib -> lib : _getD
+note left : Invariant before mint
+
+lib -> lib : required invariant =\ninvariant before mint +\n((required 3Crv *\ninvariant before mint) /\ntotal 3Crv)
+
+lib -> lib : _getY
+note left : required DAI bal\nfor required invariant
+
+lib -> 3p : fee()
+activate 3p
+note left : 3Pool fee
+return fee
+
+lib -> lib : _getY
+note left : required DAI bal after fees\nfor required invariant
+
+lib -> lib : required DAI =\nrequired DAI bal -\nDAI bal
+
+lib -> lib : assets =\nrequired DAI *\n0.0000002
+note left : round up by\n0.002 basis points
+
+return assets (DAI),\n3Pool USD value,\ntotal 3Crv
+
+group Sandwich protection using virtual price
+sv -> sv : fair assets (DAI) =\n(required 3Crv *\n3Pool USD value) /\n(total 3Crv)
+sv -> sv : max assets (DAI) =\nfair assets (DAI) * (1 + slippage)
+sv -> sv : require(\nassets <= max assets)
+end
+
+sv -> dai : transferFrom(\nsender,\nstablecoin vault,\nassets)
+activate dai
+note left: transfer DAI\nfrom sender\nto stablecoin vault
+return
+
+group _depositAndStake(assets, min 3Crv)
+sv -> 3p : add_liquidity([0, DAI], min 3Crv)
+note left : deposit DAI\nin Curve 3Pool
+activate 3p
+return
+
+sv -> 3pt : balanceOf(stablecoin vault)
+activate 3pt
+return stablecoin vault's bal of 3Pool LP (3Crv)
+
+sv -> mv : deposit(3Crv, stablecoin vault)
+activate mv
+note left : deposit 3Crv\nin Meta Vault
+return meta vault shares
+end
+
+sv -> sv : _mint(recevier,\nstablecoin shares)
+note left : mint stablecoin\nvault shares
+
+return assets (DAI)
+
+... previewMint ...
+
+owner -> sv : previewMint(\nstablecoin\nshares)
+activate sv
+
+sv -> mv : balanceOf(stablecoin vault)
+activate mv
+note left : stablecoin vault's bal\nof meta vault shares
+return meta vault shares
+
+sv -> sv : _getMetaVaultSharesFromShares(\nstablecoin shares,\nmeta vault shares,\ntotal stablecoin shares)
+note right : required meta vault shares =\nrequired stablecoin shares *\nmeta vault shares /\ntotal stablecoin shares
+
+sv -> mv : previewMint(\nrequired meta vault shares)
+activate mv
+note left : convert Meta Vault shares\nto 3Pool LP tokens (3Crv)
+return required 3Pool LPs (3Crv)
+
+sv -> lib : calcMint(\nrequired 3Crv,\nDAI 3Pool index)
+activate lib
+
+lib -> 3pt : totalSupply()
+activate 3pt
+note left : total 3Crv
+return total 3Pool LP (3Crv)
+
+lib -> 3p : balances(0)
+activate 3p
+note left : DAI in 3Pool
+return total DAI in 3Pool
+
+lib -> 3p : balances(1)
+activate 3p
+note left : USDC in 3Pool
+return total USDC in 3Pool
+
+lib -> 3p : balances(2)
+activate 3p
+note left : USDT in 3Pool
+return total USDT in 3Pool
+
+lib -> 3p : A()
+activate 3p
+note left : Amplitude Coefficient
+return A
+
+lib -> lib : _getD
+note left : Invariant before mint
+
+lib -> lib : required invariant =\ninvariant before mint +\n((required 3Crv *\ninvariant before mint) /\ntotal 3Crv)
+
+lib -> lib : _getY
+note left : required DAI bal\nfor required invariant
+
+lib -> 3p : fee()
+activate 3p
+note left : 3Pool fee
+return fee
+
+lib -> lib : _getY
+note left : required DAI bal after fees\nfor required invariant
+
+lib -> lib : required DAI =\nrequired DAI bal -\nDAI bal
+
+lib -> lib : assets =\nrequired DAI *\n0.0000002
+note left : round up by\n0.002 basis points
+
+return assets (DAI),\n3Pool USD value,\ntotal 3Crv
+
+return assets (DAI)
+
+... withdraw ...
+
+owner -> sv : withdraw(\nassets,\nreceiver,\nowner)
+activate sv
+note left : withdraw\nassets (DAI)
+
+sv -> mv : balanceOf(stablecoin vault)
+activate mv
+note left : stablecoin vault's bal\nof meta vault shares
+return meta vault shares
+
+sv -> lib : calcWithdraw(\nassets,\nDAI 3Pool index)
+activate lib
+
+lib -> 3pt : totalSupply()
+activate 3pt
+note left : total 3Crv
+return total 3Pool LP (3Crv)
+
+lib -> 3p : balances(0)
+activate 3p
+note left : DAI in 3Pool
+return total DAI in 3Pool
+
+lib -> 3p : balances(1)
+activate 3p
+note left : USDC in 3Pool
+return total USDC in 3Pool
+
+lib -> 3p : balances(2)
+activate 3p
+note left : USDT in 3Pool
+return total USDT in 3Pool
+
+lib -> 3p : A()
+activate 3p
+note left : Amplitude Coefficient
+return A
+
+lib -> lib : _getD
+note left : Invariant before withdraw
+
+lib -> lib : _getD
+note left : Invariant after withdraw
+
+lib -> 3p : fee()
+activate 3p
+note left : 3Pool fee
+return fee
+
+lib -> lib : _getD
+note left : Invariant after fees
+
+return required 3Crv,\n3Pool USD value,\ntotal 3Crv
+note right : 3Pool LP (3Crv) =\n(total 3Pool LP *\n(invariant after fees -\ninvariant before withdraw)) /\ninvariant before withdraw
+
+sv -> mv : withdraw(\nrequired 3Crv,\nstablecoin vault,\nstablecoin vault)
+activate mv
+return meta vault shares
+
+sv -> sv : stablecoin shares =\n(meta vault shares *\ntotal stablecoin shares) /\ntotal meta vault shares
+
+group Sandwich protection using virtual price
+sv -> sv : fair assets (DAI) =\n(required 3Crv *\n3Pool USD value) /\n(total 3Crv)
+sv -> sv : min assets (DAI) =\nfair assets (DAI) * (1 - slippage)
+sv -> sv : require(\nassets >= min assets)
+end
+
+sv -> 3p : remove_liquidity_imbalance(\nassets,\nrequired 3Crv)
+activate 3p
+note left : remove DAI from 3Pool\nwith required 3Crv as min
+return
+
+sv -> sv : _burn(\nowner,\nstablecoin shares)
+note left : burn stablecoin\nvault shares
+
+sv -> dai : transfer(\nreceiver,\nassets)
+activate dai
+note left: transfer DAI\nfrom stablecoin vault\nto receiver
+return
+
+return stablecoin\nvault\nshares
+
+... previewWithdraw ...
+
+owner -> sv : previewWithdraw(\nassets)
+activate sv
+
+sv -> lib : calcWithdraw(\nassets,\nDAI 3Pool index)
+activate lib
+
+lib -> 3pt : totalSupply()
+activate 3pt
+note left : total 3Crv
+return total 3Pool LP (3Crv)
+
+lib -> 3p : balances(0)
+activate 3p
+note left : DAI in 3Pool
+return total DAI in 3Pool
+
+lib -> 3p : balances(1)
+activate 3p
+note left : USDC in 3Pool
+return total USDC in 3Pool
+
+lib -> 3p : balances(2)
+activate 3p
+note left : USDT in 3Pool
+return total USDT in 3Pool
+
+lib -> 3p : A()
+activate 3p
+note left : Amplitude Coefficient
+return A
+
+lib -> lib : _getD
+note left : Invariant before withdraw
+
+lib -> lib : _getD
+note left : Invariant after withdraw
+
+lib -> 3p : fee()
+activate 3p
+note left : 3Pool fee
+return fee
+
+lib -> lib : _getD
+note left : Invariant after fees
+
+return required 3Crv,\n3Pool USD value,\ntotal 3Crv
+note right : 3Pool LP (3Crv) =\n(total 3Pool LP *\n(invariant after fees -\ninvariant before withdraw)) /\ninvariant before withdraw
+
+sv -> mv : previewWithdraw(\nrequired 3Crv,\nstablecoin vault,\nstablecoin vault)
+activate mv
+return meta vault shares
+
+sv -> mv : balanceOf(stablecoin vault)
+activate mv
+note left : stablecoin vault's bal\nof meta vault shares
+return meta vault shares
+
+sv -> sv : stablecoin shares =\n(meta vault shares *\ntotal stablecoin shares) /\ntotal meta vault shares
+
+return stablecoin\nvault\nshares
+
+... redeem ...
+
+owner -> sv : redeem(\nstablecoin shares,\nreceiver\nowner)
+activate sv
+note left : redeem\nvault\nshares
+
+sv -> mv : balanceOf(stablecoin vault)
+activate mv
+note left : stablecoin vault's bal\nof meta vault shares
+return meta vault shares
+
+sv -> sv : _getMetaVaultSharesFromShares(\nstablecoin shares,\nmeta vault shares,\ntotal stablecoin shares)
+note right : required meta vault shares =\nrequired stablecoin shares *\nmeta vault shares /\ntotal stablecoin shares
+
+sv -> mv : redeem(\nrequired meta vault shares,\nstablecoin vault,\nstablecoin vault)
+activate mv
+return 3Pool LP (3Crv)
+
+group Sandwich protection using virtual price
+sv -> lib : getVirtualPrice()
+activate lib
+return 3Crv/USD virtual price
+
+sv -> sv : fair assets (DAI) =\n3Crv /\n3Crv/USD virtual price
+sv -> sv : min assets (DAI) =\nfair assets (DAI) * (1 - slippage)
+end
+
+sv -> 3p : remove_liquidity_one_coin(\n3Crv,\nDAI 3Pool index,\nmin assets (DAI))
+activate 3p
+return
+
+sv -> sv : _burn(\nowner,\nstablecoin shares)
+note left : burn stablecoin\nvault shares
+
+sv -> dai : transfer(\nreceiver,\nassets)
+activate dai
+note left: transfer DAI\nfrom stablecoin vault\nto receiver
+return
+
+return assets (DAI)
+
+... previewRedeem ...
+
+owner -> sv : previewRedeem(\nstablecoin shares)
+activate sv
+
+sv -> mv : balanceOf(stablecoin vault)
+activate mv
+note left : stablecoin vault's bal\nof meta vault shares
+return meta vault shares
+
+sv -> sv : _getMetaVaultSharesFromShares(\nstablecoin shares,\nmeta vault shares,\ntotal stablecoin shares)
+note right : required meta vault shares =\nrequired stablecoin shares *\nmeta vault shares /\ntotal stablecoin shares
+
+sv -> mv : previewRedeem( required meta vault shares)
+activate mv
+return 3Pool LP (3Crv)
+
+sv -> lib : calcRedeem(3Crv,\nDAI 3Pool index)
+activate lib
+
+lib -> 3pt : totalSupply()
+activate 3pt
+note left : total 3Crv
+return total 3Pool LP (3Crv)
+
+lib -> 3p : balances(0)
+activate 3p
+note left : DAI in 3Pool
+return total DAI in 3Pool
+
+lib -> 3p : balances(1)
+activate 3p
+note left : USDC in 3Pool
+return total USDC in 3Pool
+
+lib -> 3p : balances(2)
+activate 3p
+note left : USDT in 3Pool
+return total USDT in 3Pool
+
+lib -> 3p : A()
+activate 3p
+note left : Amplitude Coefficient
+return A
+
+lib -> lib : _getD
+note left : Invariant before redeem
+
+lib -> lib : required invariant =\ninvariant before redeem -\n((required 3Crv *\ninvariant before redeem) /\ntotal 3Crv)
+
+lib -> lib : _getY
+note left : required DAI bal\nfor required invariant
+
+lib -> 3p : fee()
+activate 3p
+note left : 3Pool fee
+return fee
+
+lib -> lib : _getY
+note left : required DAI bal after fees\nfor required invariant
+
+lib -> lib : required DAI =\nDAI bal -\nrequired DAI bal
+
+return assets (DAI),\n3Pool USD value,\ntotal 3Crv
+
+return assets (DAI)
+
+@enduml
