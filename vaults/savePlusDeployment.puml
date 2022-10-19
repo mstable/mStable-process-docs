@@ -1,28 +1,28 @@
 @startuml
 
-title "Save+ Contract Dependencies"
+title "3Pool Convex Meta Vault Dependencies"
 
 object "Curve3CrvMetaVault" as mv1 <<mStable>> {
     asset: DAI
-    symbol: 3pDAI
-    name: 3Pooler Meta Vault (DAI)
+    symbol: mvDAI-3PCV
+    name: DAI 3Pool Convex Meta Vault
 }
 
 object "Curve3CrvMetaVault" as mv2 <<mStable>> {
     asset: USDC
-    symbol: 3pUSDC
-    name: 3Pooler Meta Vault (USDC)
+    symbol: mvUSDC-3PCV
+    name: USDC 3Pool Convex Meta Vault
 }
 
 object "Curve3CrvMetaVault" as mv3 <<mStable>> {
     asset: USDT
-    symbol: 3pUSDT
-    name: 3Pooler Meta Vault (USDT)
+    symbol: mvUSDT-3PCV
+    name: USDT 3Pool Convex Meta Vault
 }
 
 object "PeriodicAllocationPerfFeeMetaVault" as mv4 <<mStable>> {
     asset: 3Crv
-    symbol: mv3CRV
+    symbol: mv3CRV-CVX
     name: 3CRV Convex Meta Vault
 }
 
@@ -44,11 +44,11 @@ object "Convex3CrvLiquidatorVault" as bv3 <<mStable>> {
     name: 3Crv Convex BUSD Vault
 }
 
-object "Convex3CrvLiquidatorVault" as bv4 <<mStable>> {
-    asset: 3Crv
-    symbol: vcx3CRV-LUSD
-    name: 3Crv Convex LUSD Vault
-}
+' object "Convex3CrvLiquidatorVault" as bv4 <<mStable>> {
+'     asset: 3Crv
+'     symbol: vcx3CRV-LUSD
+'     name: 3Crv Convex LUSD Vault
+' }
 
 ' class "Convex3CrvLiquidatorVault" as bv5 <<mStable>> {
 '     asset: 3Crv
@@ -89,11 +89,11 @@ object "BUSD+3Crv" as busd3Crv <<Curve>> #LightCyan {
     lp token: cvxBUSD3CRV-f
 }
 
-object "LUSD+3Crv" as lusd3Crv <<Curve>> #LightCyan {
-    ' pool: USDP+3Crv
-    assets: LUSD, 3Crv
-    lp token: LUSD3CRV-f
-}
+' object "LUSD+3Crv" as lusd3Crv <<Curve>> #LightCyan {
+'     ' pool: USDP+3Crv
+'     assets: LUSD, 3Crv
+'     lp token: LUSD3CRV-f
+' }
 
 object "FRAX+3Crv" as cvx1 <<Convex>> #Thistle {
     ' pool: FRAX+3Crv
@@ -113,11 +113,11 @@ object "BUSD+3Crv" as cvx3 <<Convex>> #Thistle {
     lp token: cvxBUSD3CRV-f
 }
 
-object "LUSD+3Crv" as cvx4 <<Convex>> #Thistle {
-    ' pool: USDP+3Crv
-    asset: LUSD3CRV-f
-    lp token: cvxLUSD3CRV-f
-}
+' object "LUSD+3Crv" as cvx4 <<Convex>> #Thistle {
+'     ' pool: USDP+3Crv
+'     asset: LUSD3CRV-f
+'     lp token: cvxLUSD3CRV-f
+' }
 
 ' object "sUSD+3Crv" as cvx5 <<Convex>> #Thistle {
 '     ' pool: USDP+3Crv
@@ -137,9 +137,9 @@ object "BUSD Gauge" as cg3 <<Curve>> #LightCyan {
     asset: BUSD3CRV-f
 }
 
-object "LUSD Gauge" as cg4 <<Curve>> #LightCyan {
-    asset: LUSD3CRV-f
-}
+' object "LUSD Gauge" as cg4 <<Curve>> #LightCyan {
+'     asset: LUSD3CRV-f
+' }
 
 ' object "sUSD Gauge" as cg5 <<Curve>> #LightCyan {
 '     asset: crvPlain3andSUSD
@@ -158,49 +158,49 @@ mv3 ..> mv4
 mv4 ..> bv1
 mv4 ..> bv2
 mv4 ..> bv3
-mv4 ..> bv4
+' mv4 ..> bv4
 ' mv4 ..> bv5
 
 bv1 <..> l
 bv2 <..> l
 bv3 <..> l
-bv4 <..> l
+' bv4 <..> l
 ' bv5 <..> al
 
 bv1 ....> cvx1
 bv2 ....> cvx2
 bv3 ....> cvx3
-bv4 ....> cvx4
+' bv4 ....> cvx4
 ' bv5 ...> cvx5
 
 bv1 ...> frax3Crv
 bv2 ...> musd3Crv
 bv3 ...> busd3Crv
-bv4 ...> lusd3Crv
+' bv4 ...> lusd3Crv
 ' bv5 ...> sUSD3Crv
 
 3p <.. bv1
 3p <.. bv2
 3p <.. bv3
-3p <.. bv4
+' 3p <.. bv4
 ' 3p <.. bv5
 
 cvx1 ..> cg1
 cvx2 ..> cg2
 cvx3 ..> cg3
-cvx4 ..> cg4
+' cvx4 ..> cg4
 ' cvx5 ..> cg5
 
 frax3Crv <... cg1
 musd3Crv <... cg2
 busd3Crv <... cg3
-lusd3Crv <... cg4
+' lusd3Crv <... cg4
 ' sUSD3Crv <... cg5
 
 frax3Crv <.. cvx1
 musd3Crv <.. cvx2
 busd3Crv <.. cvx3
-lusd3Crv <.. cvx4
+' lusd3Crv <.. cvx4
 ' sUSD3Crv <... cvx5
 
 l <.> css

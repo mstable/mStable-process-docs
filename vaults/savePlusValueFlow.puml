@@ -1,13 +1,13 @@
 @startuml
 
-title "Value Flows of Save+ Vaults"
+title "Value Flows of 3Crv Convex Vaults"
 
 actor "Shareholder" as sh
 actor "Fee Receiver" as fr
 participant "Liquidator" as l <<mStable>>
-participant "DAI 3Pooler\nMeta Vault\n(3pDAI)" as 3pDAI <<mStable>>
+participant "DAI 3Pool Convex\nMeta Vault\n(mvDAI-3PCV)" as 3pDAI <<mStable>>
 participant "3Pool\nDAI/USDC/USDT\n(3Crv)" as 3pool <<Curve>>
-participant "3Crv Convex\nMeta Vault\n(mv3CRV)" as mv <<mStable>>
+participant "3Crv Convex\nMeta Vault\n(mv3CRV-CVX)" as mv <<mStable>>
 box mUSD
 participant "3Crv Convex\nmUSD Vault\n(vcx3CRV-mUSD)" as musdbv <<mStable>>
 participant "mUSD\nMetapool\n(musd3CRV)" as musdmp <<Curve>>
@@ -35,21 +35,21 @@ return 3Crv
 3pDAI -> mv : 3Crv
 activate mv
 note left : 3Crv deposited\nto Meta Vault\nfor Meta Vault LP tokens.
-return mv3CRV
-return 3pDAI
+return mv3CRV-CVX
+return mvDAI-3PCV
 
 end
 
 group #transparent Deposit 3Crv to Meta Vault
 
-... Shareholder deposits to Meta Vault ...
+... Shareholder deposits to 3Crv Convex Meta Vault ...
 
 sh -> mv : 3Crv
 activate mv
-return mv3CRV
+return mv3CRV-CVX
 note right : shares minted at\nlast settlement\nassets per share
 
-... Vault Manager Settles Deposits every 5 days ...
+... Vault Manager Settles Deposits every 7 days ...
 
 mv -> musdbv : 3Crv
 activate mv
@@ -70,8 +70,8 @@ return cvxmusd3CRV
 return vcx3CRV-mUSD
 note right : Convex vault shares\nminted to meta vault
 
-mv -> fr : mv3CRV
-note right : 5% performance fee\ncharged since last settle\nin meta vault shares
+mv -> fr : mv3CRV-CVX
+note right : 4% performance fee\ncharged since last settle\nin meta vault shares
 deactivate mv
 
 end
@@ -138,7 +138,7 @@ cvxmusd -> musdg : musd3CRV
 return cvxmusd3CRV
 
 musdbv -> fr : vcx3CRV-mUSD
-note left : 7% of new shares\nare kept as a fee.
+note left : 16% of new shares\nare kept as a fee.
 note right : Shares are minted\nthen burnt over 7 days\nso the assets per share\nare streamed.
 ' return
 deactivate musdbv
@@ -152,7 +152,9 @@ end
 
 group #transparent Withdraws 3Crv from Meta Vault
 
-sh -> mv : mv3CRV
+... Shareholder wthidraw 3Crv from 3Crv Convex Meta Vault ...
+
+sh -> mv : mv3CRV-CVX
 activate mv
 note left : shares burnt at\nlast settlement\nassets per share
 mv -> musdbv :  vcx3CRV-mUSD
