@@ -79,6 +79,10 @@ cd valueFlows
 npx puml generate musdValueFlows.puml -o musdValueFlows.png
 npx puml generate musdPolygonValueFlows.puml -o musdPolygonValueFlows.png
 npx puml generate convexFlows.puml -o convexFlows.png
+
+cd vaults
+npx puml generate convex3CrvDependencies.puml -o convex3CrvDependencies.png
+npx puml generate convex3CrvContracts.puml -o convex3CrvContracts.png
 ```
 
 ### VS Code extension

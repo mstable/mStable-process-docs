@@ -1,0 +1,64 @@
+@startuml
+
+title "Mainnet 3Pool Convex Meta Vault Contracts"
+
+' object "Curve3CrvMetaVault" as mv1 <<mStable>> {
+'     asset: DAI
+'     symbol: mvDAI-3PCV
+'     name: DAI 3Pool Convex Meta Vault
+'     address: TBD
+' }
+
+object "Curve3CrvMetaVault" as mv2 <<mStable>> {
+    asset: USDC
+    symbol: mvUSDC-3PCV
+    name: USDC 3Pool Convex Meta Vault
+    address: 0x455fB969dC06c4Aa77e7db3f0686CC05164436d2
+}
+
+' object "Curve3CrvMetaVault" as mv3 <<mStable>> {
+'     asset: USDT
+'     symbol: mvUSDT-3PCV
+'     name: USDT 3Pool Convex Meta Vault
+'     address: TBD
+' }
+
+object "PeriodicAllocationPerfFeeMetaVault" as mv4 <<mStable>> {
+    asset: 3Crv
+    symbol: mv3CRV-CVX
+    name: 3CRV Convex Meta Vault
+    address: 0x9614a4C61E45575b56c7e0251f63DCDe797d93C5
+}
+
+object "Convex3CrvLiquidatorVault" as bv1 <<mStable>> {
+    asset: 3Crv
+    symbol: vcx3CRV-FRAX
+    name:  3CRV Convex FRAX Vault
+    address: 0x98c5910823C2E67d54e4e0C03de44043DbfA7ca8
+}
+
+object "Convex3CrvLiquidatorVault" as bv2 <<mStable>> {
+    asset: 3Crv
+    symbol: vcx3CRV-mUSD
+    name: 3Crv Convex mUSD Vault
+    address: 0xB9B47E72819934d7A5d60Bf08cD2C78072383EBb
+}
+
+object "Convex3CrvLiquidatorVault" as bv3 <<mStable>> {
+    asset: 3Crv
+    symbol: vcx3CRV-BUSD
+    name: 3Crv Convex BUSD Vault
+    address: 0x87Ed92648fAE3b3930577c92c8A247b127ED8949
+}
+
+' mv1 ..> mv4
+mv2 ..> mv4
+' mv3 ..> mv4
+
+mv4 ..> bv1
+mv4 ..> bv2
+mv4 ..> bv3
+' mv4 ..> bv4
+' mv4 ..> bv5
+
+@enduml
