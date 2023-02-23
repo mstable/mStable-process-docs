@@ -1,0 +1,25 @@
+@startuml
+
+title "Batchor Value Flow"
+
+box L2
+actor "Shareholder" as sh
+participant "L2 Batchor" as l2b <<mStable>>
+end box
+
+participant "Bridge" as bg <<Bridge>>
+
+box Mainnet
+participant "X-Chain\nBatchor" as mb <<mStable>>
+participant "Mainnet\nVault" as v <<mStable>>
+end box
+
+
+sh -> l2b : assets
+l2b -> bg : assets
+bg -> mb : assets
+mb -> v : assets
+v -> mb : shares
+mb -> bg : shares
+bg -> l2b : shares
+l2b -> sh : shares

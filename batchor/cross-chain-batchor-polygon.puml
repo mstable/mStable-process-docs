@@ -1,0 +1,119 @@
+@startuml
+
+title "Cross-chain batchor"
+
+box Polygon
+actor "Depsitor" as d
+actor "Withdrawer" as w
+participant "L2 Batchor" as l2b <<mStable>>
+participant "Child Asset" as l2a <<Polygon>>
+participant "Child Vault" as l2v <<Polygon>>
+participant "Child Chain\nManager" as l2bg <<Polygon>>
+end box
+
+actor "Orchestrator" as or
+participant "Bridge" as bg <<Polygon>>
+
+box Mainnet
+participant "Root Chain\nManager" as rcm <<Polygon>>
+participant "Batchor" as mb <<mStable>>
+participant "Asset" as a <<3rd Party>>
+participant "Vault" as v <<mStable>>
+end box
+
+
+... Depositor deposits assets ...
+
+d -> l2b : deposit (Child Asset, assets)
+activate l2b
+l2b -> l2a : transferFrom(\nDepositor,\nL2 Batchor,\nassets)
+activate l2a
+return
+return epoch
+
+... Withdrawer requests redeem of shares for asssets ...
+
+w -> l2b : redeem (Child Vault, shares)
+activate l2b
+l2b -> l2v : transferFrom(\nWithdrawer,\nL2 Batchor,\nshares)
+activate l2v
+return
+return epoch
+
+... Orchestrator settles deposited assets and withdraw requests when deposits > withdraws ...
+
+or -> l2b : settle(epoch)
+activate l2b
+l2b -> l2b : net deposits\nand withdraws
+l2b -> l2a : withdraw(assets)
+activate l2a
+note left : burns the Child Assets\nheld by the L2 Batchor
+return
+loop Withdrawers
+l2b -> l2a : transfer(Withdrawer, assets)
+note left : transfer assets\nfrom L2 Batchor\nto Withdrawer
+activate l2a
+return
+end
+return proof of burn inputs
+
+... Bridge checkpoints burn transaction ...
+
+... Orchestrator claims assets from the bridge and deposits into mainnet vault ...
+
+or -> mb : settle(proof of burn)
+activate mb
+mb -> rcm : exit(proof of burn)
+activate rcm
+rcm -> a : transferFrom(\nBridge,\nBatchor,\nassets)
+activate a
+return
+return
+mb -> v : deposit(assets, Batchor)
+activate v
+v -> a : transferFrom(\nBatchor,\nassets)
+activate a
+return
+v -> v : mint(\nBatchor,\nshares)
+return shares
+mb -> rcm : depositFor(\nL2 Batchor,\nVault,\nshares)
+activate rcm
+rcm -> v : transferFrom (\nBatchor,\nRoot Chain Manager,\nshares)
+activate v
+return
+return
+return shares
+
+... Bridge mints vault shares on L2 ...
+
+bg -> l2v : mint(L2 Batchor, shares)
+activate l2v
+return
+
+
+... Orchestrator transfers vault shares across the bridge to the L2 batchor ...
+
+or -> l2b : settle(epoch)
+activate l2b
+l2b -> l2b : net vault shares
+note left : vault shares from withdraw\nand new mainnet deposit
+l2b -> l2b : calc shares per asset
+loop Depositors
+l2b -> l2v : transfer(\nDepositer, shares)
+note left : transfer assets\nfrom L2 Batchor\nto Depositer
+activate l2v
+return
+end
+return
+
+' ... Depositor claims shares ...
+
+' w -> l2b : claim()
+' activate l2b
+' l2b -> l2v : transfer(\nDepositor,\nshares)
+' activate l2v
+' return
+' return shares
+
+
+@enduml
